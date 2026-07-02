@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALA 4 // Quarentena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Creepster&family=Butcherman&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- TELA INICIAL — pôster de filme de terror B de zumbi -->
+  <div id="tela-inicio" class="overlay-tela tema-filme">
+
+    <!-- névoa em camadas, ao fundo -->
+    <div class="nevoa nevoa-1"></div>
+    <div class="nevoa nevoa-2"></div>
+    <div class="nevoa nevoa-3"></div>
+
+    <!-- silhuetas de zumbis cambaleando no horizonte -->
+    <svg class="silhuetas-zumbi" viewBox="0 0 1000 200" preserveAspectRatio="none">
+      <g class="zumbi-silhueta z1">
+        <ellipse cx="0" cy="170" rx="14" ry="6"/>
+        <rect x="-6" y="120" width="12" height="50" rx="4"/>
+        <circle cx="0" cy="108" r="10"/>
+        <rect x="-13" y="130" width="8" height="34" rx="3" class="braco braco-a"/>
+        <rect x="5" y="130" width="8" height="34" rx="3" class="braco braco-b"/>
+      </g>
+      <g class="zumbi-silhueta z2" transform="translate(140,0)">
+        <ellipse cx="0" cy="170" rx="14" ry="6"/>
+        <rect x="-6" y="118" width="12" height="52" rx="4"/>
+        <circle cx="0" cy="105" r="10"/>
+        <rect x="-13" y="128" width="8" height="34" rx="3" class="braco braco-b"/>
+        <rect x="5" y="128" width="8" height="34" rx="3" class="braco braco-a"/>
+      </g>
+      <g class="zumbi-silhueta z3" transform="translate(330,0) scale(0.85)">
+        <ellipse cx="0" cy="170" rx="14" ry="6"/>
+        <rect x="-6" y="122" width="12" height="48" rx="4"/>
+        <circle cx="0" cy="110" r="10"/>
+        <rect x="-13" y="132" width="8" height="32" rx="3" class="braco braco-a"/>
+        <rect x="5" y="132" width="8" height="32" rx="3" class="braco braco-b"/>
+      </g>
+      <g class="zumbi-silhueta z4" transform="translate(560,0) scale(1.1)">
+        <ellipse cx="0" cy="170" rx="14" ry="6"/>
+        <rect x="-6" y="118" width="12" height="52" rx="4"/>
+        <circle cx="0" cy="104" r="10"/>
+        <rect x="-13" y="128" width="8" height="34" rx="3" class="braco braco-b"/>
+        <rect x="5" y="128" width="8" height="34" rx="3" class="braco braco-a"/>
+      </g>
+      <g class="zumbi-silhueta z5" transform="translate(760,0) scale(0.9)">
+        <ellipse cx="0" cy="170" rx="14" ry="6"/>
+        <rect x="-6" y="120" width="12" height="50" rx="4"/>
+        <circle cx="0" cy="107" r="10"/>
+        <rect x="-13" y="130" width="8" height="34" rx="3" class="braco braco-a"/>
+        <rect x="5" y="130" width="8" height="34" rx="3" class="braco braco-b"/>
+      </g>
+      <g class="zumbi-silhueta z6" transform="translate(930,0) scale(0.75)">
+        <ellipse cx="0" cy="170" rx="14" ry="6"/>
+        <rect x="-6" y="124" width="12" height="46" rx="4"/>
+        <circle cx="0" cy="112" r="10"/>
+        <rect x="-13" y="134" width="8" height="30" rx="3" class="braco braco-b"/>
+        <rect x="5" y="134" width="8" height="30" rx="3" class="braco braco-a"/>
+      </g>
+    </svg>
+
+    <!-- arranhões verticais de filme antigo -->
+    <div class="arranhoes-filme"></div>
+
+    <!-- ===================== PAINEL: MENU PRINCIPAL ===================== -->
+    <div class="cartaz-filme" id="painel-menu-principal" data-painel="menu">
+      <div class="selo-classificacao">----ENTRADA PROIBIDA----</div>
+
+      <h1 class="titulo-filme">
+        <span class="palavra-titulo">ALA-4</span>
+        <span class="subtitulo-filme">— HOSPITAL SANTA CLARA</span>
+      </h1>
+
+      <svg class="gotas-sangue" viewBox="0 0 400 60" preserveAspectRatio="none">
+        <path class="pingo p1" d="M40,0 q-6,18 0,28 q6,-10 0,-28 Z"/>
+        <path class="pingo p2" d="M120,0 q-5,24 0,36 q5,-12 0,-36 Z"/>
+        <path class="pingo p3" d="M210,0 q-7,15 0,22 q7,-7 0,-22 Z"/>
+        <path class="pingo p4" d="M290,0 q-5,30 0,42 q5,-12 0,-42 Z"/>
+        <path class="pingo p5" d="M350,0 q-6,12 0,18 q6,-6 0,-18 Z"/>
+      </svg>
+
+      <p class="tagline-filme">"NINGUÉM SAI DA ALA 4 COM VIDA..."</p>
+
+      <p class="instrucoes-filme">
+        WASD mover &nbsp;·&nbsp; MOUSE apontar &nbsp;·&nbsp; CLIQUE atirar &nbsp;·&nbsp; R recarregar<br>
+        SCROLL ou [ ] trocar arma &nbsp;·&nbsp; 1–3 acesso rápido &nbsp;·&nbsp; Q <strong>poder ativo</strong>
+      </p>
+
+      <!-- Menu de opções principal -->
+      <nav class="menu-opcoes">
+        <button id="btn-iniciar" class="botao-sangue botao-menu-principal">
+          <span class="botao-sangue-texto">▶ COMEÇAR JOGO</span>
+        </button>
+        <button id="btn-abrir-skin" class="botao-osso">
+          <span class="icone-osso">☠</span> SKINS <span class="valor-atual-menu" id="resumo-skin">Militar</span>
+        </button>
+        <button id="btn-abrir-armas" class="botao-osso">
+          <span class="icone-osso">🔫</span> ARMAS <span class="valor-atual-menu" id="resumo-armas">3/3 escolhidas</span>
+        </button>
+        <button id="btn-abrir-poderes" class="botao-osso">
+          <span class="icone-osso">⚡</span> PODERES <span class="valor-atual-menu" id="resumo-poder">Sai Capeta</span>
+        </button>
+      </nav>
+
+      <div class="rodape-cartaz">UMA PRODUÇÃO BRENO BOLINHA PRODUCTIONS &nbsp;·&nbsp; CLASSIFICAÇÃO: CARNIFICINA TOTAL</div>
+    </div>
+
+    <!-- ===================== PAINEL: SELEÇÃO DE SKIN ===================== -->
+    <div class="cartaz-filme cartaz-selecao escondido" id="painel-skin" data-painel="skin">
+      <div class="selo-classificacao">ESCOLHA SEU SOBREVIVENTE</div>
+      <h2 class="titulo-secao">SKIN</h2>
+      <p class="tagline-secao">cada um tem suas próprias chances contra os infectados...</p>
+
+      <div class="grade-skins" id="grade-skins">
+        <!-- cartões de skin injetados via JS -->
+      </div>
+
+      <button class="botao-voltar" data-voltar="menu">‹ VOLTAR</button>
+    </div>
+
+    <!-- ===================== PAINEL: SELEÇÃO DE ARMAS ===================== -->
+    <div class="cartaz-filme cartaz-selecao cartaz-larga escondido" id="painel-armas" data-painel="armas">
+      <div class="selo-classificacao">ARSENAL DA QUARENTENA</div>
+      <h2 class="titulo-secao">ARMAS</h2>
+      <p class="tagline-secao">escolha exatamente <strong>3 armas</strong> para os 3 slots do seu inventário</p>
+      <p class="contador-selecao">SELECIONADAS: <span id="contador-armas-selecionadas">0</span> / 3</p>
+
+      <div class="grade-armas" id="grade-armas">
+        <!-- cartões de arma injetados via JS -->
+      </div>
+
+      <button class="botao-voltar" data-voltar="menu">‹ VOLTAR</button>
+    </div>
+
+    <!-- ===================== PAINEL: SELEÇÃO DE PODERES ===================== -->
+    <div class="cartaz-filme cartaz-selecao escondido" id="painel-poderes" data-painel="poderes">
+      <div class="selo-classificacao">SKILS SUPORTE</div>
+      <h2 class="titulo-secao">PODERES</h2>
+      <p class="tagline-secao">escolha o poder que será ativado com a tecla <strong>Q</strong></p>
+
+      <div class="grade-poderes" id="grade-poderes">
+        <!-- cartões de poder injetados via JS -->
+      </div>
+
+      <button class="botao-voltar" data-voltar="menu">‹ VOLTAR</button>
+    </div>
+  </div>
+
+  <!-- TELA DE MORTE — "FIM" estilo trailer de terror -->
+  <div id="tela-morte" class="overlay-tela tema-filme escondido">
+    <div class="nevoa nevoa-1"></div>
+    <div class="nevoa nevoa-2"></div>
+    <div class="arranhoes-filme"></div>
+
+    <div class="cartaz-filme cartaz-morte">
+      <div class="selo-classificacao selo-morte">FATAL — O MOLESTADOR TE PEGOU</div>
+      <h1 class="titulo-filme titulo-morte">
+        <span class="palavra-titulo palavra-fim">VOCÊ FOI MOLESTADO</span>
+      </h1>
+      <svg class="gotas-sangue" viewBox="0 0 400 60" preserveAspectRatio="none">
+        <path class="pingo p1" d="M70,0 q-6,20 0,30 q6,-10 0,-30 Z"/>
+        <path class="pingo p2" d="M180,0 q-5,26 0,38 q5,-12 0,-38 Z"/>
+        <path class="pingo p3" d="M280,0 q-7,16 0,24 q7,-8 0,-24 Z"/>
+      </svg>
+      <p class="tagline-filme">A INFECÇÃO VENCEU ESTA NOITE...</p>
+      <p class="subtitulo-filme estatisticas-morte">
+        ONDA <span id="onda-final">1</span> &nbsp;·&nbsp;
+        NÍVEL <span id="nivel-final">1</span> &nbsp;·&nbsp;
+        ABATES <span id="abates-final">0</span>
+      </p>
+      <button id="btn-reiniciar" class="botao-sangue">
+        <span class="botao-sangue-texto">TENTAR SOBREVIVER DE NOVO</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- CANVAS DO JOGO -->
+  <canvas id="canvas-jogo"></canvas>
+
+  <!-- VINHETA / RUÍDO / FLICKER -->
+  <div class="vinheta"></div>
+  <div class="flicker-luz"></div>
+  <div class="ruido-crt"></div>
+
+  <!-- HUD -->
+  <div id="hud" class="hud escondido">
+
+    <!-- Bolsa de soro = vida -->
+    <div class="painel-soro">
+      <div class="rotulo-painel">SORO / VITAL</div>
+      <div class="soro-tubo">
+        <div id="barra-vida" class="soro-liquido"></div>
+      </div>
+      <div class="soro-valor"><span id="texto-vida">100</span> / <span id="texto-vida-max">100</span></div>
+    </div>
+
+    <!-- Monitor de EXP estilo batimento cardíaco -->
+    <div class="painel-monitor">
+      <div class="rotulo-painel">NÍVEL <span id="texto-nivel">1</span></div>
+      <svg class="ecg-svg" viewBox="0 0 220 40" preserveAspectRatio="none">
+        <polyline id="linha-ecg" points="0,20 220,20" />
+      </svg>
+      <div class="exp-tubo">
+        <div id="barra-exp" class="exp-liquido"></div>
+      </div>
+      <div class="exp-valor"><span id="texto-exp">0</span> / <span id="texto-exp-max">200</span> EXP</div>
+    </div>
+
+    <!-- Munição estilo seringa -->
+    <div class="painel-municao">
+      <div class="rotulo-painel" id="texto-nome-arma">GLOCK</div>
+      <div class="seringa">
+        <div class="seringa-corpo">
+          <div id="seringa-liquido" class="seringa-liquido"></div>
+        </div>
+        <div class="seringa-agulha"></div>
+      </div>
+      <div class="municao-valor"><span id="texto-municao">12</span> / <span id="texto-municao-max">12</span></div>
+      <div id="aviso-recarga" class="aviso-recarga escondido">RECARREGANDO...</div>
+    </div>
+
+    <!-- Barra de inventário de armas (rotativo, scroll ou [ ]) -->
+    <div class="barra-inventario">
+      <div class="seta-inventario" id="seta-anterior">‹</div>
+      <div class="slot-anterior" id="slot-anterior">—</div>
+      <div class="slot-atual" id="slot-atual">
+        <span class="slot-atual-numero" id="slot-atual-numero">1/24</span>
+        <span class="slot-atual-nome" id="slot-atual-nome">Glock</span>
+      </div>
+      <div class="slot-proximo" id="slot-proximo">—</div>
+      <div class="seta-inventario" id="seta-proxima">›</div>
+    </div>
+    <div class="dica-inventario">SCROLL ou [ ] para trocar &nbsp;·&nbsp; 1–3 acesso direto</div>
+
+    <!-- Contador de abates -->
+    <div class="painel-abates">ABATES: <span id="texto-abates">0</span></div>
+
+    <!-- Painel de onda -->
+    <div class="painel-onda">
+      <div class="rotulo-painel">ONDA <span id="texto-onda">1</span></div>
+      <div class="onda-restantes"><span id="texto-onda-restantes">0</span> infectados</div>
+      <div class="onda-status" id="texto-status-onda">EM ANDAMENTO</div>
+    </div>
+
+    <!-- Aviso de nova onda -->
+    <div id="aviso-onda" class="aviso-onda escondido">ONDA 1</div>
+
+    <!-- Poder ativo (definido no menu) -->
+    <div class="painel-poder">
+      <div class="rotulo-painel">Q — <span id="texto-nome-poder">SAI CAPETA</span></div>
+      <div class="poder-tubo">
+        <div id="barra-poder" class="poder-liquido"></div>
+      </div>
+      <div class="poder-status" id="texto-status-poder">PRONTO</div>
+    </div>
+
+    <!-- Aviso de subida de nível -->
+    <div id="aviso-nivel" class="aviso-nivel escondido">NÍVEL SUPERIOR ALCANÇADO</div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
