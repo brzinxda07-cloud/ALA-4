@@ -1,0 +1,1160 @@
+/* ============================================================
+   ALA 4 // QUARENTENA — paleta hospital abandonado
+   verde-musgo sujo, concreto, bege fluorescente, vermelho emergência
+   ============================================================ */
+
+:root {
+  --concreto:        #2b2b28;
+  --concreto-escuro:  #1a1a17;
+  --verde-musgo:      #3a4a3f;
+  --verde-musgo-claro: #5c7263;
+  --bege-fluor:       #d4cf9a;
+  --vermelho-emerg:   #7a1f1f;
+  --vermelho-vivo:    #b53030;
+  --quase-preto:      #0d0d0c;
+  --soro-azul:        #8fb8a8;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--quase-preto);
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--bege-fluor);
+  cursor: crosshair;
+}
+
+#canvas-jogo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  background: radial-gradient(ellipse at center, #20221f 0%, #0d0d0c 100%);
+}
+
+/* ============================================================
+   TELAS (início / morte) — TEMA: PÔSTER DE FILME B DE TERROR ZUMBI
+   ============================================================ */
+
+.overlay-tela {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px),
+    radial-gradient(ellipse at center, #14160f 0%, #060605 100%);
+  overflow: hidden;
+}
+
+.escondido { display: none !important; }
+
+/* --- Camadas de névoa animada ao fundo --- */
+.tema-filme .nevoa {
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height: 55%;
+  bottom: 0;
+  pointer-events: none;
+  filter: blur(2px);
+  mix-blend-mode: screen;
+}
+
+.nevoa-1 {
+  background: radial-gradient(ellipse at 30% 100%, rgba(92,114,99,0.18) 0%, transparent 60%);
+  animation: deriva-nevoa-1 22s linear infinite;
+}
+.nevoa-2 {
+  background: radial-gradient(ellipse at 70% 100%, rgba(122,31,31,0.1) 0%, transparent 55%);
+  animation: deriva-nevoa-2 30s linear infinite;
+}
+.nevoa-3 {
+  background: radial-gradient(ellipse at 50% 100%, rgba(58,74,63,0.22) 0%, transparent 65%);
+  animation: deriva-nevoa-1 18s linear infinite reverse;
+}
+
+@keyframes deriva-nevoa-1 {
+  0%   { transform: translateX(0) scaleX(1); }
+  50%  { transform: translateX(4%) scaleX(1.06); }
+  100% { transform: translateX(0) scaleX(1); }
+}
+@keyframes deriva-nevoa-2 {
+  0%   { transform: translateX(0); }
+  50%  { transform: translateX(-5%); }
+  100% { transform: translateX(0); }
+}
+
+/* --- Silhuetas de zumbis cambaleando no horizonte --- */
+.silhuetas-zumbi {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 26vh;
+  max-height: 220px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.zumbi-silhueta {
+  fill: #000000;
+  opacity: 0.85;
+  transform-origin: center bottom;
+}
+
+.zumbi-silhueta .braco {
+  animation: balanco-braco 2.6s ease-in-out infinite;
+  transform-origin: top center;
+}
+.zumbi-silhueta .braco-a { animation-delay: 0s; }
+.zumbi-silhueta .braco-b { animation-delay: 1.3s; }
+
+.z1 { animation: cambaleio 3.2s ease-in-out infinite; }
+.z2 { animation: cambaleio 3.6s ease-in-out infinite 0.4s; }
+.z3 { animation: cambaleio 2.9s ease-in-out infinite 0.8s; }
+.z4 { animation: cambaleio 3.4s ease-in-out infinite 0.2s; }
+.z5 { animation: cambaleio 3.0s ease-in-out infinite 0.6s; }
+.z6 { animation: cambaleio 3.7s ease-in-out infinite 1.0s; }
+
+@keyframes cambaleio {
+  0%, 100% { transform: rotate(-2.5deg) translateY(0); }
+  50%      { transform: rotate(2.5deg) translateY(-3px); }
+}
+
+@keyframes balanco-braco {
+  0%, 100% { transform: rotate(-12deg); }
+  50%      { transform: rotate(18deg); }
+}
+
+/* --- Arranhões verticais de filme antigo / grão --- */
+.arranhoes-filme {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0px, transparent 38px, rgba(255,255,255,0.05) 39px, transparent 41px),
+    repeating-linear-gradient(91deg, transparent 0px, transparent 67px, rgba(255,255,255,0.04) 68px, transparent 70px);
+  animation: tremor-arranhoes 0.2s steps(3) infinite;
+}
+
+@keyframes tremor-arranhoes {
+  0%   { transform: translateX(0); }
+  50%  { transform: translateX(-1px); }
+  100% { transform: translateX(1px); }
+}
+
+/* --- O cartaz / pôster do filme --- */
+.cartaz-filme {
+  position: relative;
+  z-index: 10;
+  width: min(560px, 90vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  text-align: center;
+  padding: 30px 36px 34px;
+  color: #d8d4c0;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(122,31,31,0.18) 0%, transparent 55%),
+    linear-gradient(180deg, #0f0f0c 0%, #050504 100%);
+  border: 2px solid #3a3530;
+  box-shadow:
+    0 0 0 8px #000,
+    0 0 50px rgba(122,31,31,0.35),
+    0 30px 70px rgba(0,0,0,0.85);
+  scrollbar-width: thin;
+  scrollbar-color: #5a1414 #1a1a17;
+}
+
+.cartaz-filme::-webkit-scrollbar {
+  width: 7px;
+}
+.cartaz-filme::-webkit-scrollbar-track {
+  background: #1a1a17;
+}
+.cartaz-filme::-webkit-scrollbar-thumb {
+  background: #5a1414;
+}
+
+/* borda rasgada/desgastada do pôster, via gradiente conic irregular simulando rasgos */
+.cartaz-filme::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  pointer-events: none;
+  border: 1px solid rgba(216,212,192,0.08);
+  box-shadow: inset 0 0 60px rgba(0,0,0,0.6);
+}
+
+.selo-classificacao {
+  display: inline-block;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #ff5a3d;
+  border: 1px solid #ff5a3d;
+  padding: 4px 10px;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+  margin-bottom: 14px;
+  animation: pulsar-selo 1.6s infinite ease-in-out;
+}
+
+@keyframes pulsar-selo {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.titulo-filme {
+  line-height: 1;
+  margin: 6px 0 0;
+}
+
+.palavra-titulo {
+  display: block;
+  font-family: 'Creepster', cursive;
+  font-size: 72px;
+  letter-spacing: 3px;
+  color: #b9120c;
+  text-shadow:
+    0 0 12px rgba(185,18,12,0.65),
+    3px 3px 0 #000,
+    -1px -1px 0 #000;
+  filter: drop-shadow(0 6px 0 rgba(0,0,0,0.4));
+}
+
+.palavra-fim {
+  font-size: 54px;
+}
+
+.subtitulo-filme {
+  display: block;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #8a8470;
+  margin-top: 8px;
+}
+
+/* --- Gotas de sangue pingando do título --- */
+.gotas-sangue {
+  width: 100%;
+  height: 30px;
+  display: block;
+  margin-top: -4px;
+  overflow: visible;
+}
+
+.pingo {
+  fill: #8a1410;
+  transform-origin: top center;
+}
+
+.p1 { animation: pingar 3.2s ease-in infinite; }
+.p2 { animation: pingar 4.0s ease-in infinite 0.6s; }
+.p3 { animation: pingar 2.8s ease-in infinite 1.2s; }
+.p4 { animation: pingar 3.6s ease-in infinite 0.3s; }
+.p5 { animation: pingar 3.0s ease-in infinite 1.6s; }
+
+@keyframes pingar {
+  0%   { transform: scaleY(1) translateY(0); opacity: 1; }
+  70%  { transform: scaleY(1.6) translateY(26px); opacity: 1; }
+  85%  { opacity: 0.4; }
+  100% { transform: scaleY(1.6) translateY(26px); opacity: 0; }
+}
+
+.tagline-filme {
+  font-family: 'Butcherman', cursive;
+  font-size: 19px;
+  color: #c7c2a8;
+  margin-top: 14px;
+  letter-spacing: 1px;
+}
+
+.instrucoes-filme {
+  margin-top: 22px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  line-height: 1.9;
+  color: #a8a290;
+  background: rgba(122,31,31,0.08);
+  border-top: 1px dashed #4a443a;
+  border-bottom: 1px dashed #4a443a;
+  padding: 10px 8px;
+}
+
+.instrucoes-filme strong {
+  color: #ff5a3d;
+}
+
+.estatisticas-morte {
+  letter-spacing: 2px;
+  margin-top: 14px;
+  color: #c7c2a8;
+}
+
+/* --- Botão "pintado com sangue" --- */
+.botao-sangue {
+  position: relative;
+  margin-top: 26px;
+  width: 100%;
+  padding: 16px 10px;
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  letter-spacing: 2px;
+  background: linear-gradient(180deg, #7a1f1f 0%, #4a1010 100%);
+  color: #f0ece0;
+  border: 2px solid #2a0a0a;
+  cursor: pointer;
+  text-transform: uppercase;
+  clip-path: polygon(
+    2% 8%, 12% 0%, 30% 4%, 48% 0%, 65% 5%, 82% 0%, 98% 6%,
+    100% 92%, 88% 100%, 70% 95%, 52% 100%, 35% 96%, 18% 100%, 0% 90%
+  );
+  transition: transform 0.12s, filter 0.15s;
+}
+
+.botao-sangue:hover {
+  filter: brightness(1.25);
+}
+
+.botao-sangue:active {
+  transform: scale(0.97);
+}
+
+.botao-sangue-texto {
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.6);
+}
+
+.rodape-cartaz {
+  margin-top: 16px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #5c564a;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   MENU PRINCIPAL — botões de navegação (Skin / Armas / Poderes)
+   ============================================================ */
+
+.menu-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.botao-menu-principal {
+  margin-top: 0;
+}
+
+.botao-osso {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #d8d4c0;
+  background: linear-gradient(180deg, rgba(40,38,32,0.9) 0%, rgba(18,17,14,0.95) 100%);
+  border: 1px solid #4a443a;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, transform 0.1s;
+}
+
+.botao-osso:hover {
+  border-color: #ff5a3d;
+  color: #ff5a3d;
+}
+
+.botao-osso:active {
+  transform: scale(0.98);
+}
+
+.icone-osso {
+  font-size: 15px;
+  filter: grayscale(1) brightness(1.4);
+}
+
+.valor-atual-menu {
+  margin-left: auto;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #8a8470;
+  text-transform: none;
+}
+
+/* ============================================================
+   TELAS DE SELEÇÃO (skin / armas / poderes)
+   ============================================================ */
+
+.cartaz-selecao {
+  text-align: left;
+}
+
+.cartaz-selecao .selo-classificacao,
+.cartaz-selecao .titulo-secao,
+.cartaz-selecao .tagline-secao,
+.cartaz-selecao .contador-selecao {
+  text-align: center;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cartaz-larga {
+  width: min(760px, 94vw);
+}
+
+.titulo-secao {
+  font-family: 'Creepster', cursive;
+  font-size: 44px;
+  letter-spacing: 2px;
+  color: #b9120c;
+  text-shadow: 2px 2px 0 #000, 0 0 10px rgba(185,18,12,0.5);
+  margin-top: 6px;
+}
+
+.tagline-secao {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: #a8a290;
+  letter-spacing: 1px;
+  margin-top: 6px;
+}
+
+.tagline-secao strong {
+  color: #ff5a3d;
+}
+
+.contador-selecao {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: #6fff8f;
+  margin-top: 10px;
+}
+
+.botao-voltar {
+  display: block;
+  margin: 22px auto 0;
+  padding: 10px 26px;
+  font-family: 'VT323', monospace;
+  font-size: 17px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: transparent;
+  color: #a8a290;
+  border: 1px solid #4a443a;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.botao-voltar:hover {
+  color: #ff5a3d;
+  border-color: #ff5a3d;
+}
+
+/* ============================================================
+   CARTÕES DE SKIN
+   ============================================================ */
+
+.grade-skins {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.cartao-skin {
+  position: relative;
+  background: linear-gradient(180deg, rgba(40,38,32,0.85) 0%, rgba(12,12,10,0.95) 100%);
+  border: 1px solid #4a443a;
+  padding: 14px 10px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+}
+
+.cartao-skin:hover {
+  transform: translateY(-2px);
+  border-color: #8a8470;
+}
+
+.cartao-skin.selecionada {
+  border-color: #ff5a3d;
+  box-shadow: 0 0 14px rgba(255,90,61,0.4);
+  background: linear-gradient(180deg, rgba(122,31,31,0.18) 0%, rgba(12,12,10,0.95) 100%);
+}
+
+.cartao-skin-prevista {
+  width: 100%;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.cartao-skin-nome {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #d8d4c0;
+}
+
+.cartao-skin-desc {
+  font-size: 9px;
+  color: #7a7460;
+  margin-top: 3px;
+  letter-spacing: 0.5px;
+}
+
+.selo-equipado {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #6fff8f;
+  border: 1px solid #6fff8f;
+  padding: 1px 5px;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   CARTÕES DE ARMA
+   ============================================================ */
+
+.grade-armas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #5a1414 #1a1a17;
+}
+
+.grade-armas::-webkit-scrollbar {
+  width: 6px;
+}
+.grade-armas::-webkit-scrollbar-track {
+  background: #1a1a17;
+}
+.grade-armas::-webkit-scrollbar-thumb {
+  background: #5a1414;
+}
+
+.cartao-arma {
+  position: relative;
+  background: linear-gradient(180deg, rgba(40,38,32,0.85) 0%, rgba(12,12,10,0.95) 100%);
+  border: 1px solid #3a3530;
+  padding: 10px 8px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s, opacity 0.15s;
+}
+
+.cartao-arma:hover {
+  border-color: #8a8470;
+}
+
+.cartao-arma.selecionada {
+  border-color: #ff5a3d;
+  box-shadow: 0 0 10px rgba(255,90,61,0.35);
+  background: linear-gradient(180deg, rgba(122,31,31,0.2) 0%, rgba(12,12,10,0.95) 100%);
+}
+
+.cartao-arma.desativada {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cartao-arma-categoria {
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #ff5a3d;
+  opacity: 0.8;
+}
+
+.cartao-arma-nome {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #d8d4c0;
+  margin-top: 3px;
+  line-height: 1.25;
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cartao-arma-stats {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 5px;
+  font-size: 8px;
+  color: #7a7460;
+}
+
+.numero-slot-escolhido {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ff5a3d;
+  color: #000;
+  font-family: 'VT323', monospace;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+/* ============================================================
+   CARTÕES DE PODER
+   ============================================================ */
+
+.grade-poderes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.cartao-poder {
+  position: relative;
+  background: linear-gradient(180deg, rgba(40,38,32,0.85) 0%, rgba(12,12,10,0.95) 100%);
+  border: 1px solid #4a443a;
+  padding: 18px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+}
+
+.cartao-poder:hover {
+  transform: translateY(-2px);
+  border-color: #8a8470;
+}
+
+.cartao-poder.selecionada {
+  border-color: #ff5a3d;
+  box-shadow: 0 0 14px rgba(255,90,61,0.4);
+  background: linear-gradient(180deg, rgba(122,31,31,0.18) 0%, rgba(12,12,10,0.95) 100%);
+}
+
+.cartao-poder-icone {
+  font-size: 30px;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 0 6px rgba(255,90,61,0.5));
+}
+
+.cartao-poder-nome {
+  font-family: 'Creepster', cursive;
+  font-size: 20px;
+  color: #ff5a3d;
+  letter-spacing: 1px;
+}
+
+.cartao-poder-desc {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10.5px;
+  color: #a8a290;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* --- Variante da tela de morte --- */
+.cartaz-morte {
+  border-color: #5a1414;
+  box-shadow:
+    0 0 0 8px #000,
+    0 0 60px rgba(185,18,12,0.45),
+    0 30px 70px rgba(0,0,0,0.9);
+}
+
+.selo-morte {
+  color: #ff8a3d;
+  border-color: #ff8a3d;
+}
+
+@media (max-width: 640px) {
+  .grade-armas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .grade-skins {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
+/* ============================================================
+   EFEITOS ATMOSFÉRICOS — vinheta, flicker, ruído CRT
+   ============================================================ */
+
+.vinheta {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 35%,
+    rgba(13,13,12,0.55) 75%,
+    rgba(13,13,12,0.92) 100%
+  );
+  mix-blend-mode: multiply;
+}
+
+.flicker-luz {
+  position: fixed;
+  inset: 0;
+  z-index: 31;
+  pointer-events: none;
+  background: rgba(92, 114, 99, 0.05);
+  animation: flicker 6s infinite steps(20);
+}
+
+@keyframes flicker {
+  0%, 92%, 100% { opacity: 0; }
+  93% { opacity: 0.5; }
+  94% { opacity: 0.05; }
+  95% { opacity: 0.6; }
+  96% { opacity: 0; }
+  97% { opacity: 0.3; }
+  98% { opacity: 0; }
+}
+
+.ruido-crt {
+  position: fixed;
+  inset: 0;
+  z-index: 32;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image:
+    repeating-linear-gradient(0deg, #fff 0px, transparent 1px, transparent 2px);
+  animation: ruido-mover 0.3s steps(2) infinite;
+}
+
+@keyframes ruido-mover {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(2px); }
+}
+
+/* ============================================================
+   HUD — estilo prancheta médica / monitor de paciente
+   ============================================================ */
+
+.hud {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.rotulo-painel {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bege-fluor);
+  opacity: 0.85;
+  margin-bottom: 4px;
+}
+
+/* --- Painel de Soro (vida) --- */
+.painel-soro {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  background: rgba(26,26,23,0.78);
+  border: 1px solid var(--verde-musgo-claro);
+  padding: 10px 14px;
+  width: 200px;
+}
+
+.soro-tubo {
+  width: 100%;
+  height: 16px;
+  background: var(--concreto-escuro);
+  border: 1px solid var(--quase-preto);
+  position: relative;
+  overflow: hidden;
+}
+
+.soro-liquido {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--soro-azul), #b9d9c9);
+  transition: width 0.25s ease;
+  box-shadow: 0 0 8px rgba(143,184,168,0.6) inset;
+}
+
+.soro-valor {
+  font-size: 12px;
+  margin-top: 4px;
+  text-align: right;
+  opacity: 0.8;
+}
+
+/* --- Painel de Monitor (EXP / nível) --- */
+.painel-monitor {
+  position: absolute;
+  top: 18px;
+  left: 240px;
+  background: rgba(26,26,23,0.78);
+  border: 1px solid var(--verde-musgo-claro);
+  padding: 10px 14px;
+  width: 230px;
+}
+
+.ecg-svg {
+  width: 100%;
+  height: 30px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.ecg-svg polyline {
+  fill: none;
+  stroke: #6fff8f;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 3px #6fff8f);
+}
+
+.exp-tubo {
+  width: 100%;
+  height: 10px;
+  background: var(--concreto-escuro);
+  border: 1px solid var(--quase-preto);
+  overflow: hidden;
+}
+
+.exp-liquido {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #6fff8f, #2f9e52);
+  transition: width 0.25s ease;
+}
+
+.exp-valor {
+  font-size: 11px;
+  margin-top: 4px;
+  text-align: right;
+  opacity: 0.8;
+}
+
+/* --- Painel de Munição (seringa) --- */
+.painel-municao {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: rgba(26,26,23,0.78);
+  border: 1px solid var(--vermelho-emerg);
+  padding: 10px 14px;
+  width: 210px;
+  text-align: right;
+}
+
+.painel-municao .rotulo-painel {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seringa {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 16px;
+  margin-bottom: 4px;
+}
+
+.seringa-corpo {
+  width: 140px;
+  height: 14px;
+  border: 1px solid var(--bege-fluor);
+  background: var(--concreto-escuro);
+  position: relative;
+  overflow: hidden;
+}
+
+.seringa-liquido {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #e8a23c, #c97a1f);
+  transition: width 0.15s ease;
+}
+
+.seringa-agulha {
+  width: 14px;
+  height: 4px;
+  background: var(--bege-fluor);
+  margin-left: 2px;
+}
+
+.municao-valor {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.aviso-recarga {
+  margin-top: 6px;
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--vermelho-vivo);
+  animation: pulsar-texto 0.5s infinite;
+}
+
+@keyframes pulsar-texto {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* --- Barra de inventário rotativo (substitui os 4 slots fixos) --- */
+.barra-inventario {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.seta-inventario {
+  font-family: 'VT323', monospace;
+  font-size: 26px;
+  color: var(--bege-fluor);
+  opacity: 0.5;
+}
+
+.slot-anterior,
+.slot-proximo {
+  background: rgba(26,26,23,0.6);
+  border: 1px solid var(--verde-musgo-claro);
+  padding: 6px 12px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.55;
+  min-width: 90px;
+  max-width: 130px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-atual {
+  background: rgba(58,74,63,0.9);
+  border: 2px solid var(--bege-fluor);
+  box-shadow: 0 0 14px rgba(212,207,154,0.45);
+  padding: 8px 22px;
+  text-align: center;
+  min-width: 150px;
+  max-width: 230px;
+}
+
+.slot-atual-numero {
+  display: block;
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--bege-fluor);
+  opacity: 0.8;
+}
+
+.slot-atual-nome {
+  display: block;
+  font-size: 15px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 2px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.dica-inventario {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  letter-spacing: 1px;
+  opacity: 0.5;
+  text-transform: uppercase;
+}
+
+/* --- Contador de abates --- */
+.painel-abates {
+  position: absolute;
+  bottom: 18px;
+  left: 18px;
+  background: rgba(26,26,23,0.78);
+  border: 1px solid var(--verde-musgo-claro);
+  padding: 8px 14px;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+/* --- Painel de onda --- */
+.painel-onda {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(26,26,23,0.78);
+  border: 1px solid var(--vermelho-emerg);
+  padding: 8px 16px;
+  text-align: center;
+  min-width: 160px;
+}
+
+.onda-restantes {
+  font-size: 12px;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.onda-status {
+  font-family: 'VT323', monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  margin-top: 4px;
+  color: #6fff8f;
+}
+
+.aviso-onda {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'VT323', monospace;
+  font-size: 42px;
+  letter-spacing: 4px;
+  color: var(--vermelho-vivo);
+  text-shadow: 0 0 16px rgba(181,48,48,0.9), 2px 2px 0 #000;
+  animation: aviso-nivel-anim 2.2s ease forwards;
+}
+
+.aviso-onda-chefe {
+  font-size: 50px;
+  color: #ffcf3a;
+  text-shadow: 0 0 22px rgba(255,90,60,0.95), 2px 2px 0 #000;
+}
+
+/* --- Painel do poder SAI CAPETA --- */
+.painel-poder {
+  position: absolute;
+  bottom: 18px;
+  right: 18px;
+  background: rgba(26,26,23,0.78);
+  border: 1px solid var(--vermelho-emerg);
+  padding: 8px 14px;
+  width: 170px;
+  text-align: right;
+}
+
+.poder-tubo {
+  width: 100%;
+  height: 10px;
+  background: var(--concreto-escuro);
+  border: 1px solid var(--quase-preto);
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.poder-liquido {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ff8a3d, #ff3d3d);
+  transition: width 0.1s linear;
+  box-shadow: 0 0 6px rgba(255,80,60,0.6) inset;
+}
+
+.poder-status {
+  font-family: 'VT323', monospace;
+  font-size: 13px;
+  letter-spacing: 1px;
+  margin-top: 4px;
+  color: #6fff8f;
+}
+
+.poder-status.em-espera {
+  color: var(--vermelho-vivo);
+  animation: pulsar-texto 0.5s infinite;
+}
+
+/* --- Aviso de nível --- */
+.aviso-nivel {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'VT323', monospace;
+  font-size: 34px;
+  letter-spacing: 3px;
+  color: #6fff8f;
+  text-shadow: 0 0 14px rgba(111,255,143,0.8);
+  animation: aviso-nivel-anim 1.8s ease forwards;
+}
+
+@keyframes aviso-nivel-anim {
+  0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.8); }
+  15%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -65%) scale(1); }
+}
+
+/* --- Texto de grito "SAI CAPETA" --- */
+.grito-capeta {
+  position: absolute;
+  z-index: 22;
+  font-family: 'VT323', monospace;
+  font-size: 28px;
+  letter-spacing: 2px;
+  color: #ff5a3d;
+  text-shadow: 0 0 12px rgba(255,90,61,0.9), 2px 2px 0 #000;
+  transform: translate(-50%, -50%);
+  animation: grito-capeta-anim 0.7s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes grito-capeta-anim {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  25%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -80%) scale(1.3); }
+}
