@@ -388,6 +388,10 @@
 
   let mouseX = 0, mouseY = 0;
   let teclasPressionadas = {};
+
+  // vetor analógico do manche virtual de movimento (mobile), -1..1 em cada eixo
+  let toqueMovimentoX = 0, toqueMovimentoY = 0;
+
   let jogoAtivo = false;
   let tempoDecorridoJogo = 0;
   let ultimoFrameTs = 0;
@@ -1076,10 +1080,17 @@
     if (teclasPressionadas["a"] || teclasPressionadas["arrowleft"]) dx -= 1;
     if (teclasPressionadas["d"] || teclasPressionadas["arrowright"]) dx += 1;
 
-    if (dx !== 0 || dy !== 0) {
-      const norm = Math.hypot(dx, dy);
-      jogador.x += (dx / norm) * jogador.velocidade;
-      jogador.y += (dy / norm) * jogador.velocidade;
+    // soma o manche virtual de movimento (mobile) — vetor analógico
+    dx += toqueMovimentoX;
+    dy += toqueMovimentoY;
+
+    const magnitude = Math.hypot(dx, dy);
+    if (magnitude > 0.05) {
+      // no teclado o fator fica sempre travado em 1 (mesma velocidade de sempre);
+      // no manche virtual ele acompanha o quanto o polegar empurrou o manche
+      const fator = Math.min(magnitude, 1);
+      jogador.x += (dx / magnitude) * jogador.velocidade * fator;
+      jogador.y += (dy / magnitude) * jogador.velocidade * fator;
     }
 
     jogador.x = Math.max(jogador.raio, Math.min(canvas.width - jogador.raio, jogador.x));
@@ -1900,6 +1911,167 @@
 
   btnIniciar.addEventListener("click", iniciarJogo);
   btnReiniciar.addEventListener("click", iniciarJogo);
+
+  // ----------------------------------------------------------
+  // CONTROLES DE TOQUE (MOBILE) — dois manches virtuais + botões
+  // ----------------------------------------------------------
+  const ehDispositivoToque = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
+  if (ehDispositivoToque) {
+    document.body.classList.add("dispositivo-toque");
+  }
+
+  const RAIO_MANCHE = 45; // deslocamento máximo (px) do manche a partir do centro
+
+  // --- manche esquerdo: movimento (equivalente analógico do WASD) ---
+  const zonaMovimento     = document.getElementById("zona-joystick-movimento");
+  const baseMovimento     = document.getElementById("base-joystick-movimento");
+  const manivelaMovimento = document.getElementById("manivela-joystick-movimento");
+  let idToqueMovimento = null;
+  let centroMovimentoX = 0, centroMovimentoY = 0;
+
+  function moverManivela(elManivela, dx, dy) {
+    elManivela.style.transform = `translate(${dx}px, ${dy}px)`;
+  }
+
+  function iniciarToqueMovimento(toque) {
+    idToqueMovimento = toque.identifier;
+    const rect = baseMovimento.getBoundingClientRect();
+    centroMovimentoX = rect.left + rect.width / 2;
+    centroMovimentoY = rect.top + rect.height / 2;
+    atualizarToqueMovimento(toque);
+  }
+
+  function atualizarToqueMovimento(toque) {
+    const dx = toque.clientX - centroMovimentoX;
+    const dy = toque.clientY - centroMovimentoY;
+    const dist = Math.hypot(dx, dy);
+    const distLimitada = Math.min(dist, RAIO_MANCHE);
+    const angulo = Math.atan2(dy, dx);
+    const kx = Math.cos(angulo) * distLimitada;
+    const ky = Math.sin(angulo) * distLimitada;
+    moverManivela(manivelaMovimento, kx, ky);
+    toqueMovimentoX = kx / RAIO_MANCHE;
+    toqueMovimentoY = ky / RAIO_MANCHE;
+  }
+
+  function finalizarToqueMovimento() {
+    idToqueMovimento = null;
+    toqueMovimentoX = 0;
+    toqueMovimentoY = 0;
+    moverManivela(manivelaMovimento, 0, 0);
+  }
+
+  zonaMovimento.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    if (idToqueMovimento !== null) return;
+    iniciarToqueMovimento(e.changedTouches[0]);
+  }, { passive: false });
+
+  zonaMovimento.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+    for (const toque of e.changedTouches) {
+      if (toque.identifier === idToqueMovimento) atualizarToqueMovimento(toque);
+    }
+  }, { passive: false });
+
+  function finalizarSeForToqueMovimento(e) {
+    for (const toque of e.changedTouches) {
+      if (toque.identifier === idToqueMovimento) finalizarToqueMovimento();
+    }
+  }
+  zonaMovimento.addEventListener("touchend", finalizarSeForToqueMovimento);
+  zonaMovimento.addEventListener("touchcancel", finalizarSeForToqueMovimento);
+
+  // --- manche direito: mira + tiro contínuo (equivalente do mouse) ---
+  const zonaMira     = document.getElementById("zona-joystick-mira");
+  const baseMira     = document.getElementById("base-joystick-mira");
+  const manivelaMira = document.getElementById("manivela-joystick-mira");
+  let idToqueMira = null;
+  let centroMiraX = 0, centroMiraY = 0;
+
+  function dispararSeNaoAutomatica() {
+    if (!jogoAtivo) return;
+    const def = DEFINICAO_ARMAS[jogador.armaAtual];
+    if (!def.automatica) {
+      tentarAtirar(agora());
+    }
+  }
+
+  function iniciarToqueMira(toque) {
+    idToqueMira = toque.identifier;
+    const rect = baseMira.getBoundingClientRect();
+    centroMiraX = rect.left + rect.width / 2;
+    centroMiraY = rect.top + rect.height / 2;
+    teclasPressionadas["mouse"] = true;
+    dispararSeNaoAutomatica();
+  }
+
+  function atualizarToqueMira(toque) {
+    const dx = toque.clientX - centroMiraX;
+    const dy = toque.clientY - centroMiraY;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 8) return; // ignora tremores mínimos, mantém a última direção mirada
+    const distLimitada = Math.min(dist, RAIO_MANCHE);
+    const angulo = Math.atan2(dy, dx);
+    moverManivela(manivelaMira, Math.cos(angulo) * distLimitada, Math.sin(angulo) * distLimitada);
+
+    // só a direção importa (tentarAtirar usa atan2), então projeta a mira
+    // bem à frente do jogador na direção do manche
+    if (jogoAtivo) {
+      mouseX = jogador.x + Math.cos(angulo) * 400;
+      mouseY = jogador.y + Math.sin(angulo) * 400;
+    }
+  }
+
+  function finalizarToqueMira() {
+    idToqueMira = null;
+    teclasPressionadas["mouse"] = false;
+    moverManivela(manivelaMira, 0, 0);
+  }
+
+  zonaMira.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    if (idToqueMira !== null) return;
+    iniciarToqueMira(e.changedTouches[0]);
+  }, { passive: false });
+
+  zonaMira.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+    for (const toque of e.changedTouches) {
+      if (toque.identifier === idToqueMira) atualizarToqueMira(toque);
+    }
+  }, { passive: false });
+
+  function finalizarSeForToqueMira(e) {
+    for (const toque of e.changedTouches) {
+      if (toque.identifier === idToqueMira) finalizarToqueMira();
+    }
+  }
+  zonaMira.addEventListener("touchend", finalizarSeForToqueMira);
+  zonaMira.addEventListener("touchcancel", finalizarSeForToqueMira);
+
+  // --- botões de ação: recarregar (R) e poder ativo (Q) ---
+  function ligarBotaoToque(el, handler) {
+    el.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      handler();
+    }, { passive: false });
+    // mantém o click funcionando também para mouse/trackpad em telas híbridas
+    el.addEventListener("click", handler);
+  }
+
+  ligarBotaoToque(document.getElementById("btn-toque-recarregar"), () => {
+    if (jogoAtivo) tentarRecarregar();
+  });
+  ligarBotaoToque(document.getElementById("btn-toque-poder"), () => {
+    if (jogoAtivo) usarPoderAtivo(agora());
+  });
+
+  // --- setas/slots da barra de inventário também viram tocáveis ---
+  document.getElementById("seta-anterior").addEventListener("click", () => { if (jogoAtivo) navegarInventario(-1); });
+  document.getElementById("seta-proxima").addEventListener("click", () => { if (jogoAtivo) navegarInventario(1); });
+  document.getElementById("slot-anterior").addEventListener("click", () => { if (jogoAtivo) navegarInventario(-1); });
+  document.getElementById("slot-proximo").addEventListener("click", () => { if (jogoAtivo) navegarInventario(1); });
 
   // estado inicial visual do cenário (antes de iniciar)
   gerarCenario();
