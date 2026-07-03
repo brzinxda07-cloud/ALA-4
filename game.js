@@ -1509,6 +1509,7 @@
 
     elSlotAnterior.textContent = lista.length > 1 ? DEFINICAO_ARMAS[chaveAnterior].nome : "—";
     elSlotProximo.textContent = lista.length > 1 ? DEFINICAO_ARMAS[chaveProxima].nome : "—";
+
   }
 
   // navega entre as 3 armas do loadout (circular), na direção indicada (1 ou -1)
@@ -2065,6 +2066,37 @@
   });
   ligarBotaoToque(document.getElementById("btn-toque-poder"), () => {
     if (jogoAtivo) usarPoderAtivo(agora());
+  });
+
+  // --- botão ATIRAR dedicado (mobile) ---
+  const btnTouqueAtirar = document.getElementById("btn-toque-atirar");
+
+  btnTouqueAtirar.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    if (!jogoAtivo) return;
+    teclasPressionadas["mouse"] = true;
+    const def = DEFINICAO_ARMAS[jogador.armaAtual];
+    if (!def.automatica) {
+      tentarAtirar(agora());
+    }
+  }, { passive: false });
+
+  btnTouqueAtirar.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    // só desativa o tiro se o joystick de mira também não estiver ativo
+    if (idToqueMira === null) teclasPressionadas["mouse"] = false;
+  }, { passive: false });
+
+  btnTouqueAtirar.addEventListener("touchcancel", (e) => {
+    e.preventDefault();
+    if (idToqueMira === null) teclasPressionadas["mouse"] = false;
+  }, { passive: false });
+
+  // fallback click para telas híbridas
+  btnTouqueAtirar.addEventListener("click", () => {
+    if (!jogoAtivo) return;
+    const def = DEFINICAO_ARMAS[jogador.armaAtual];
+    if (!def.automatica) tentarAtirar(agora());
   });
 
   // --- setas/slots da barra de inventário também viram tocáveis ---
