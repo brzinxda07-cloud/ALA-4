@@ -28,6 +28,7 @@
   const hud          = document.getElementById("hud");
   const btnIniciar   = document.getElementById("btn-iniciar");
   const btnReiniciar = document.getElementById("btn-reiniciar");
+  const btnMenuMorte = document.getElementById("btn-menu-morte");
 
   const elBarraVida   = document.getElementById("barra-vida");
   const elTextoVida    = document.getElementById("texto-vida");
@@ -1650,6 +1651,14 @@
     requestAnimationFrame(loop);
   }
 
+  function voltarAoMenuPrincipal() {
+    jogoAtivo = false;
+    telaMorte.classList.add("escondido");
+    hud.classList.add("escondido");
+    mostrarPainelMenu("menu");
+    telaInicio.classList.remove("escondido");
+  }
+
   // ----------------------------------------------------------
   // MENU — navegação entre painéis (principal / skin / armas / poderes)
   // ----------------------------------------------------------
@@ -1912,6 +1921,7 @@
 
   btnIniciar.addEventListener("click", iniciarJogo);
   btnReiniciar.addEventListener("click", iniciarJogo);
+  btnMenuMorte.addEventListener("click", voltarAoMenuPrincipal);
 
   // ----------------------------------------------------------
   // CONTROLES DE TOQUE (MOBILE) — dois manches virtuais + botões

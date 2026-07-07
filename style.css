@@ -719,6 +719,10 @@ body.dispositivo-toque {
   border-color: #ff8a3d;
 }
 
+#btn-menu-morte {
+  margin-top: 12px;
+}
+
 @media (max-width: 640px) {
   .grade-armas {
     grid-template-columns: repeat(2, 1fr);
