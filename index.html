@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ALA 4 // Quarentena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Creepster&family=Butcherman&display=swap" rel="stylesheet">
@@ -91,6 +91,8 @@
         SCROLL ou [ ] trocar arma &nbsp;·&nbsp; 1–3 acesso rápido &nbsp;·&nbsp; Q <strong>poder ativo</strong>
       </p>
 
+      <div class="carteira-moedas">MOEDAS GUARDADAS: <span id="texto-moedas-banco">0</span></div>
+
       <!-- Menu de opções principal -->
       <nav class="menu-opcoes">
         <button id="btn-iniciar" class="botao-sangue botao-menu-principal">
@@ -171,16 +173,48 @@
       <p class="subtitulo-filme estatisticas-morte">
         ONDA <span id="onda-final">1</span> &nbsp;·&nbsp;
         NÍVEL <span id="nivel-final">1</span> &nbsp;·&nbsp;
-        ABATES <span id="abates-final">0</span>
+        ABATES <span id="abates-final">0</span> &nbsp;·&nbsp;
+        MOEDAS <span id="moedas-final">0</span>
       </p>
       <button id="btn-reiniciar" class="botao-sangue">
         <span class="botao-sangue-texto">TENTAR SOBREVIVER DE NOVO</span>
       </button>
-      <button id="btn-menu-morte" class="botao-osso">
-        <span class="icone-osso">☠</span> VOLTAR AO MENU PRINCIPAL
-      </button>
+      <button id="btn-menu-morte" class="botao-voltar">‹ VOLTAR AO MENU</button>
     </div>
   </div>
+
+  <!-- ===================== PAINEL: LOJA DE COMPRAS ===================== -->
+  <div id="painel-compras" class="painel-compras escondido">
+    <!-- Botão de fechar estilo holograma -->
+    <button id="btn-fechar-compras" class="btn-fechar-compras">
+      <span class="fechar-x"></span>
+    </button>
+
+    <div class="compras-header">
+      <h2 class="titulo-compras">ARMARIA IMPROVIZADA</h2>
+      <p class="subtitulo-compras">Intervalo de segurança — reforce seus suprimentos</p>
+    </div>
+
+    <div class="compras-saldo">
+      <span class="label-saldo">MOEDAS DISPONÍVEIS:</span>
+      <span id="moedas-compras" class="valor-saldo">0</span>
+    </div>
+
+    <div class="grade-itens-compra" id="grade-itens-compra">
+      <!-- Itens serão injetados via JS -->
+      <div class="placeholder-compras">Nenhum item disponível ainda...</div>
+    </div>
+
+    <div class="compras-rodape">
+      Próxima onda em <span id="tempo-proxima-onda" class="tempo-onda">50</span>s
+    </div>
+  </div>
+
+  <!-- ===================== BOTÃO: PULAR ONDA ===================== -->
+  <button id="btn-pular-onda" class="btn-pular-onda escondido">
+    <span class="texto-pular">PULAR ESPERA</span>
+    <span class="icone-pular">⚡</span>
+  </button>
 
   <!-- CANVAS DO JOGO -->
   <canvas id="canvas-jogo"></canvas>
@@ -214,17 +248,20 @@
       <div class="exp-valor"><span id="texto-exp">0</span> / <span id="texto-exp-max">200</span> EXP</div>
     </div>
 
-    <!-- Munição estilo seringa -->
-    <div class="painel-municao">
-      <div class="rotulo-painel" id="texto-nome-arma">GLOCK</div>
-      <div class="seringa">
-        <div class="seringa-corpo">
-          <div id="seringa-liquido" class="seringa-liquido"></div>
+    <!-- Coluna superior direita: munição + botão de voltar ao menu -->
+    <div class="coluna-hud-direita">
+      <div class="painel-municao">
+        <div class="rotulo-painel" id="texto-nome-arma">GLOCK</div>
+        <div class="seringa">
+          <div class="seringa-corpo">
+            <div id="seringa-liquido" class="seringa-liquido"></div>
+          </div>
+          <div class="seringa-agulha"></div>
         </div>
-        <div class="seringa-agulha"></div>
+        <div class="municao-valor"><span id="texto-municao">12</span> / <span id="texto-municao-max">12</span></div>
+        <div id="aviso-recarga" class="aviso-recarga escondido">RECARREGANDO...</div>
       </div>
-      <div class="municao-valor"><span id="texto-municao">12</span> / <span id="texto-municao-max">12</span></div>
-      <div id="aviso-recarga" class="aviso-recarga escondido">RECARREGANDO...</div>
+      <button id="btn-menu-hud" class="botao-menu-hud">‹ MENU</button>
     </div>
 
     <!-- Barra de inventário de armas (rotativo, scroll ou [ ]) -->
@@ -240,8 +277,8 @@
     </div>
     <div class="dica-inventario">SCROLL ou [ ] para trocar &nbsp;·&nbsp; 1–3 acesso direto</div>
 
-    <!-- Contador de abates -->
-    <div class="painel-abates">ABATES: <span id="texto-abates">0</span></div>
+    <!-- Contador de abates e moedas -->
+    <div class="painel-abates">ABATES: <span id="texto-abates">0</span> &nbsp;·&nbsp; MOEDAS: <span id="texto-moedas">0</span></div>
 
     <!-- Painel de onda -->
     <div class="painel-onda">
@@ -264,42 +301,6 @@
 
     <!-- Aviso de subida de nível -->
     <div id="aviso-nivel" class="aviso-nivel escondido">NÍVEL SUPERIOR ALCANÇADO</div>
-
-    <!-- ===================== CONTROLES DE TOQUE (MOBILE) ===================== -->
-    <div id="controles-toque" class="controles-toque">
-
-      <!-- Joystick esquerdo: movimento (WASD virtual) -->
-      <div class="zona-joystick zona-joystick-esquerda" id="zona-joystick-movimento">
-        <div class="base-joystick" id="base-joystick-movimento">
-          <div class="manivela-joystick" id="manivela-joystick-movimento"></div>
-        </div>
-      </div>
-
-      <!-- Botões de ação: recarregar e poder -->
-      <div class="coluna-botoes-acao">
-        <button id="btn-toque-poder" class="botao-toque botao-toque-poder">
-          <span class="botao-toque-letra">Q</span>
-          <span class="botao-toque-rotulo">PODER</span>
-        </button>
-        <button id="btn-toque-recarregar" class="botao-toque botao-toque-recarregar">
-          <span class="botao-toque-letra">R</span>
-          <span class="botao-toque-rotulo">RECARREGAR</span>
-        </button>
-      </div>
-
-      <!-- Botão ATIRAR centralizado (entre os dois joysticks) -->
-      <button id="btn-toque-atirar" class="botao-atirar-mobile">
-        <span class="botao-atirar-icone">🔫</span>
-        <span class="botao-atirar-rotulo">ATIRAR</span>
-      </button>
-
-      <!-- Joystick direito: mira -->
-      <div class="zona-joystick zona-joystick-direita" id="zona-joystick-mira">
-        <div class="base-joystick base-joystick-mira" id="base-joystick-mira">
-          <div class="manivela-joystick manivela-joystick-mira" id="manivela-joystick-mira"></div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <script src="game.js"></script>

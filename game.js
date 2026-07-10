@@ -21,6 +21,33 @@
   window.addEventListener("resize", ajustarTamanhoCanvas);
 
   // ----------------------------------------------------------
+  // PERSISTÊNCIA — banco de moedas acumulado entre partidas
+  // guardado no localStorage do navegador; sobrevive a morte,
+  // reinício e fechar/reabrir a página
+  // ----------------------------------------------------------
+  const CHAVE_BANCO_MOEDAS = "ala4_banco_moedas";
+
+  function carregarBancoMoedas() {
+    try {
+      const valor = parseInt(localStorage.getItem(CHAVE_BANCO_MOEDAS), 10);
+      return Number.isFinite(valor) && valor >= 0 ? valor : 0;
+    } catch (e) {
+      // localStorage indisponível (ex.: modo privado/navegador bloqueando) — segue sem persistir
+      return 0;
+    }
+  }
+
+  function salvarBancoMoedas() {
+    try {
+      localStorage.setItem(CHAVE_BANCO_MOEDAS, String(bancoMoedas));
+    } catch (e) {
+      // falha silenciosa: sem localStorage disponível, o jogo continua funcionando normalmente
+    }
+  }
+
+  let bancoMoedas = carregarBancoMoedas();
+
+  // ----------------------------------------------------------
   // ELEMENTOS DE UI
   // ----------------------------------------------------------
   const telaInicio   = document.getElementById("tela-inicio");
@@ -29,6 +56,7 @@
   const btnIniciar   = document.getElementById("btn-iniciar");
   const btnReiniciar = document.getElementById("btn-reiniciar");
   const btnMenuMorte = document.getElementById("btn-menu-morte");
+  const btnMenuHud   = document.getElementById("btn-menu-hud");
 
   const elBarraVida   = document.getElementById("barra-vida");
   const elTextoVida    = document.getElementById("texto-vida");
@@ -47,10 +75,12 @@
   const elAvisoRecarga  = document.getElementById("aviso-recarga");
 
   const elTextoAbates   = document.getElementById("texto-abates");
+  const elTextoMoedas   = document.getElementById("texto-moedas");
   const elAvisoNivel    = document.getElementById("aviso-nivel");
   const elNivelFinal    = document.getElementById("nivel-final");
   const elAbatesFinal   = document.getElementById("abates-final");
   const elOndaFinal     = document.getElementById("onda-final");
+  const elMoedasFinal   = document.getElementById("moedas-final");
 
   const elBarraPoder     = document.getElementById("barra-poder");
   const elStatusPoder    = document.getElementById("texto-status-poder");
@@ -79,6 +109,7 @@
   const elResumoSkin  = document.getElementById("resumo-skin");
   const elResumoArmas = document.getElementById("resumo-armas");
   const elResumoPoder = document.getElementById("resumo-poder");
+  const elTextoMoedasBanco = document.getElementById("texto-moedas-banco");
 
   const elGradeSkins   = document.getElementById("grade-skins");
   const elGradeArmas   = document.getElementById("grade-armas");
@@ -362,6 +393,7 @@
     exp: 0,
     expParaSubir: 200,
     abates: 0,
+    moedas: 0,
     armaAtual: "glock",
     armasDesbloqueadas: {},
     municao: {},          // municao atual de cada arma
@@ -389,10 +421,6 @@
 
   let mouseX = 0, mouseY = 0;
   let teclasPressionadas = {};
-
-  // vetor analógico do manche virtual de movimento (mobile), -1..1 em cada eixo
-  let toqueMovimentoX = 0, toqueMovimentoY = 0;
-
   let jogoAtivo = false;
   let tempoDecorridoJogo = 0;
   let ultimoFrameTs = 0;
@@ -402,48 +430,292 @@
   let faseEcg = 0;
 
   // ----------------------------------------------------------
-  // CENÁRIO: HOSPITAL ABANDONADO (gerado proceduralmente)
-  // salas, manchas, detritos, fiação solta
+  // CENÁRIO: HOSPITAL ABANDONADO PROCEDURAL — MAPA ESTRUTURADO
+  // Salas temáticas, mobiliário, detalhes ambientais, iluminação
   // ----------------------------------------------------------
   let elementosCenario = [];
+  let salasCenario = [];
+
+  // Tipos de salas e sua composição visual
+  const TIPOS_SALA = {
+    corredor: {
+      nome: "Corredor",
+      cor: "rgba(58, 74, 63, 0.15)",
+      detalhes: ["placa", "macas", "rachões", "poças"]
+    },
+    uti: {
+      nome: "UTI",
+      cor: "rgba(58, 74, 63, 0.2)",
+      detalhes: ["camas", "monitores", "seringas", "tubos"]
+    },
+    morgue: {
+      nome: "Morgue",
+      cor: "rgba(74, 30, 30, 0.12)",
+      detalhes: ["gavetões", "manchas", "ossos", "silhuetas"]
+    },
+    sala_cirurgia: {
+      nome: "Sala de Cirurgia",
+      cor: "rgba(143, 184, 168, 0.1)",
+      detalhes: ["mesa_cirurgia", "instrumentos", "sangue_seco", "luzes"]
+    },
+    almoxarifado: {
+      nome: "Almoxarifado",
+      cor: "rgba(58, 74, 63, 0.18)",
+      detalhes: ["caixas", "prateleiras", "garrafas", "bagunça"]
+    }
+  };
 
   function gerarCenario() {
     elementosCenario = [];
+    salasCenario = [];
     const largura = canvas.width;
     const altura = canvas.height;
 
-    // manchas de mofo/sangue seco no piso
-    for (let i = 0; i < 26; i++) {
+    // GRID DE SALAS — divide tela em áreas 2x2
+    const tamSalaX = largura / 2;
+    const tamSalaY = altura / 2;
+    const tiposSala = Object.keys(TIPOS_SALA);
+
+    for (let sx = 0; sx < 2; sx++) {
+      for (let sy = 0; sy < 2; sy++) {
+        const x = sx * tamSalaX;
+        const y = sy * tamSalaY;
+        const tipo = tiposSala[Math.floor(Math.random() * tiposSala.length)];
+        const sala = {
+          x, y, largura: tamSalaX, altura: tamSalaY, tipo,
+          id: `${sx}-${sy}`
+        };
+        salasCenario.push(sala);
+
+        // Gera elementos específicos da sala
+        gerarDetalhesSala(sala);
+      }
+    }
+
+    // RUÍDO/ATMOSFERA GERAL
+    // Manchas de mofo/sangue espalhadas
+    for (let i = 0; i < 40; i++) {
       elementosCenario.push({
         tipo: "mancha",
         x: Math.random() * largura,
         y: Math.random() * altura,
-        raio: 18 + Math.random() * 50,
-        cor: Math.random() > 0.5 ? "rgba(58,74,63,0.35)" : "rgba(74,30,30,0.25)"
+        raio: 12 + Math.random() * 45,
+        cor: Math.random() > 0.65 
+          ? `rgba(74,30,30,${0.15 + Math.random() * 0.2})`
+          : `rgba(58,74,63,${0.1 + Math.random() * 0.25})`
       });
     }
 
-    // azulejos rachados / linhas de piso de hospital
-    for (let i = 0; i < 14; i++) {
+    // Fissuras/rachaduras no piso
+    for (let i = 0; i < 18; i++) {
       elementosCenario.push({
         tipo: "racha",
         x: Math.random() * largura,
         y: Math.random() * altura,
-        comprimento: 30 + Math.random() * 70,
-        angulo: Math.random() * Math.PI * 2
+        comprimento: 25 + Math.random() * 85,
+        angulo: Math.random() * Math.PI * 2,
+        espessura: Math.random() > 0.7 ? 2.5 : 1.2
       });
     }
 
-    // macas / detritos (retângulos)
-    for (let i = 0; i < 8; i++) {
+    // Trilhas de sangue (caminhos)
+    for (let i = 0; i < 3; i++) {
+      const startX = Math.random() * largura;
+      const startY = Math.random() * altura;
+      const endX = startX + (Math.random() - 0.5) * 300;
+      const endY = startY + (Math.random() - 0.5) * 300;
       elementosCenario.push({
-        tipo: "detrito",
+        tipo: "trilha_sangue",
+        x1: startX, y1: startY,
+        x2: endX, y2: endY,
+        espessura: 3 + Math.random() * 2
+      });
+    }
+
+    // Focos de luz ambiente (sombras)
+    for (let i = 0; i < 4; i++) {
+      elementosCenario.push({
+        tipo: "foco_luz",
         x: Math.random() * largura,
         y: Math.random() * altura,
-        largura: 40 + Math.random() * 30,
-        altura: 16 + Math.random() * 10,
-        angulo: Math.random() * Math.PI
+        raio: 80 + Math.random() * 120
       });
+    }
+  }
+
+  function gerarDetalhesSala(sala) {
+    const def = TIPOS_SALA[sala.tipo];
+    const cx = sala.x + sala.largura / 2;
+    const cy = sala.y + sala.altura / 2;
+    const detalhesSala = def.detalhes || [];
+
+    // Fundo colorido da sala
+    elementosCenario.push({
+      tipo: "fundo_sala",
+      x: sala.x,
+      y: sala.y,
+      largura: sala.largura,
+      altura: sala.altura,
+      cor: def.cor
+    });
+
+    // Borda/parede da sala
+    elementosCenario.push({
+      tipo: "parede_sala",
+      x: sala.x,
+      y: sala.y,
+      largura: sala.largura,
+      altura: sala.altura
+    });
+
+    // Cria detalhes baseado no tipo
+    detalhesSala.forEach(detalhe => {
+      gerarDetalhe(detalhe, sala);
+    });
+
+    // Assinatura visual única por sala
+    const seed = sala.id.charCodeAt(0) + sala.id.charCodeAt(2);
+    if (seed % 2 === 0) {
+      elementosCenario.push({
+        tipo: "label_sala",
+        x: sala.x + 20,
+        y: sala.y + 20,
+        texto: def.nome,
+        tamanho: 11
+      });
+    }
+  }
+
+  function gerarDetalhe(tipo, sala) {
+    const cx = sala.x + sala.largura / 2;
+    const cy = sala.y + sala.altura / 2;
+    const margin = 40;
+
+    switch (tipo) {
+      case "camas": {
+        for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
+          const x = sala.x + margin + Math.random() * (sala.largura - margin * 2);
+          const y = sala.y + margin + Math.random() * (sala.altura - margin * 2);
+          elementosCenario.push({
+            tipo: "cama_hospital",
+            x, y,
+            angulo: Math.random() * Math.PI * 2
+          });
+        }
+        break;
+      }
+      case "macas": {
+        for (let i = 0; i < 1 + Math.floor(Math.random() * 2); i++) {
+          elementosCenario.push({
+            tipo: "maca",
+            x: sala.x + margin + Math.random() * (sala.largura - margin * 2),
+            y: sala.y + margin + Math.random() * (sala.altura - margin * 2),
+            angulo: Math.random() * Math.PI * 0.5
+          });
+        }
+        break;
+      }
+      case "mesa_cirurgia": {
+        elementosCenario.push({
+          tipo: "mesa_cirurgia",
+          x: cx,
+          y: cy,
+          angulo: Math.random() * Math.PI * 2
+        });
+        break;
+      }
+      case "gavetões": {
+        for (let i = 0; i < 6; i++) {
+          elementosCenario.push({
+            tipo: "gaveta_morgue",
+            x: sala.x + 60 + (i % 3) * 80,
+            y: sala.y + 80 + Math.floor(i / 3) * 100
+          });
+        }
+        break;
+      }
+      case "caixas": {
+        for (let i = 0; i < 8; i++) {
+          elementosCenario.push({
+            tipo: "caixa",
+            x: sala.x + 50 + Math.random() * (sala.largura - 100),
+            y: sala.y + 50 + Math.random() * (sala.altura - 100),
+            largura: 30 + Math.random() * 40,
+            altura: 30 + Math.random() * 40,
+            angulo: Math.random() * 0.3
+          });
+        }
+        break;
+      }
+      case "rachões": {
+        for (let i = 0; i < 4; i++) {
+          elementosCenario.push({
+            tipo: "racha",
+            x: sala.x + Math.random() * sala.largura,
+            y: sala.y + Math.random() * sala.altura,
+            comprimento: 40 + Math.random() * 60,
+            angulo: Math.random() * Math.PI * 2,
+            espessura: 2
+          });
+        }
+        break;
+      }
+      case "poças": {
+        for (let i = 0; i < 2; i++) {
+          elementosCenario.push({
+            tipo: "poca",
+            x: sala.x + margin + Math.random() * (sala.largura - margin * 2),
+            y: sala.y + margin + Math.random() * (sala.altura - margin * 2),
+            raio: 20 + Math.random() * 35
+          });
+        }
+        break;
+      }
+      case "manchas": {
+        for (let i = 0; i < 5; i++) {
+          elementosCenario.push({
+            tipo: "mancha_sangue_grande",
+            x: sala.x + margin + Math.random() * (sala.largura - margin * 2),
+            y: sala.y + margin + Math.random() * (sala.altura - margin * 2),
+            raio: 25 + Math.random() * 40
+          });
+        }
+        break;
+      }
+      case "placa": {
+        elementosCenario.push({
+          tipo: "placa_porta",
+          x: sala.x + 30,
+          y: sala.y + 30,
+          texto: Math.random() > 0.5 ? "PERIGO" : "ISOLADO"
+        });
+        break;
+      }
+      case "ossos": {
+        for (let i = 0; i < 3; i++) {
+          elementosCenario.push({
+            tipo: "osso",
+            x: sala.x + margin + Math.random() * (sala.largura - margin * 2),
+            y: sala.y + margin + Math.random() * (sala.altura - margin * 2),
+            tamanho: Math.random() > 0.5 ? "pequeno" : "grande",
+            angulo: Math.random() * Math.PI * 2
+          });
+        }
+        break;
+      }
+      case "bagunça": {
+        for (let i = 0; i < 4; i++) {
+          elementosCenario.push({
+            tipo: "entulho",
+            x: sala.x + margin + Math.random() * (sala.largura - margin * 2),
+            y: sala.y + margin + Math.random() * (sala.altura - margin * 2),
+            largura: 20 + Math.random() * 35,
+            altura: 15 + Math.random() * 25,
+            angulo: Math.random() * Math.PI * 2
+          });
+        }
+        break;
+      }
     }
   }
 
@@ -474,7 +746,7 @@
     abatidosNaOnda: 0,
     emIntervalo: true,
     tempoProximaOndaEm: 0,
-    intervaloEntreOndasMs: 4000,
+    intervaloEntreOndasMs: 50000,
     tempoUltimoSpawnMs: 0,
     intervaloSpawnMs: 700,
     ehOndaChefe: false,
@@ -548,6 +820,22 @@
     ondaInfo.abatidosNaOnda += 1;
   }
 
+  // solta os drops de um zumbi morto: frasco de exp (verde) + moeda (dourada),
+  // com um leve deslocamento aleatório entre os dois pra não nascerem sobrepostos
+  function soltarDrops(z) {
+    pickups.push({ x: z.x, y: z.y, valor: z.dropExp, raio: 7, fase: 0, tipo: "exp" });
+
+    const anguloMoeda = Math.random() * Math.PI * 2;
+    pickups.push({
+      x: z.x + Math.cos(anguloMoeda) * 10,
+      y: z.y + Math.sin(anguloMoeda) * 10,
+      valor: z.dropMoedas,
+      raio: 6,
+      fase: Math.random() * Math.PI * 2,
+      tipo: "moeda"
+    });
+  }
+
   function mostrarAvisoOnda() {
     elAvisoOnda.textContent = ondaInfo.ehOndaChefe
       ? `⚠ ONDA ${ondaInfo.numero} — UM CHEFE SE APROXIMA ⚠`
@@ -597,6 +885,9 @@
     // drop de exp começa em 20 e sobe +15 a cada nível do jogador
     const dropExp = 20 + (jogador.nivel - 1) * 15;
 
+    // drop de moedas: começa pequeno e cresce um pouco com o nível, com variação aleatória
+    const dropMoedas = 2 + Math.floor((jogador.nivel - 1) / 2) + Math.floor(Math.random() * 3);
+
     return {
       x, y,
       raio: 15,
@@ -605,6 +896,7 @@
       velocidade: aleatorioEntre(0.9, 1.6) * (1 + (jogador.nivel - 1) * 0.04),
       dano: 8 * escalaNivel,
       dropExp,
+      dropMoedas,
       ultimoAtaqueEm: 0,
       cadenciaAtaqueMs: 700,
       balancoFase: Math.random() * Math.PI * 2,
@@ -634,6 +926,8 @@
     const escalaNivel = 1 + (jogador.nivel - 1) * 0.12;
     const vidaBase = 900 * tierChefe * escalaNivel;
     const dropExp = 250 + (tierChefe - 1) * 150 + (jogador.nivel - 1) * 30;
+    // chefes soltam bem mais moedas que zumbis comuns, escalando com o tier e o nível
+    const dropMoedas = 25 + (tierChefe - 1) * 15 + (jogador.nivel - 1) * 3;
 
     return {
       x, y,
@@ -643,6 +937,7 @@
       velocidade: aleatorioEntre(0.55, 0.75) * (1 + (jogador.nivel - 1) * 0.03),
       dano: 26 * escalaNivel,
       dropExp,
+      dropMoedas,
       ultimoAtaqueEm: 0,
       cadenciaAtaqueMs: 900,
       balancoFase: Math.random() * Math.PI * 2,
@@ -696,7 +991,7 @@
 
       if (z.vida <= 0) {
         criarParticulasSangue(z.x, z.y, "#5c7263", 14);
-        pickups.push({ x: z.x, y: z.y, valor: z.dropExp, raio: 7, fase: 0 });
+        soltarDrops(z);
         zumbis.splice(i, 1);
         jogador.abates += 1;
         onZumbiMorto();
@@ -715,6 +1010,29 @@
         vida: 1,
         cor,
         raio: aleatorioEntre(1.5, 3.5)
+      });
+    }
+  }
+
+  function criarParticulasChama(x, y, vxBase, vyBase) {
+    // Criar menos partículas e com menos frequência
+    if (particulas.length > 200) return; // limitar pool máximo
+    
+    const qtd = aleatorioEntre(1, 2); // reduzir de 3-6 para 1-2
+    const cores = ["#ff7a1f", "#ff6600", "#ffaa00"];
+    
+    for (let i = 0; i < qtd; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const vel = aleatorioEntre(0.3, 1.5);
+      
+      particulas.push({
+        x, y,
+        vx: vxBase * 0.2 + Math.cos(ang) * vel,
+        vy: vyBase * 0.2 + Math.sin(ang) * vel,
+        vida: aleatorioEntre(0.3, 0.6),
+        cor: cores[Math.floor(Math.random() * cores.length)],
+        raio: aleatorioEntre(2, 5),
+        tipoParticula: "chama"
       });
     }
   }
@@ -745,7 +1063,11 @@
         p.y += (jogador.y - p.y) * 0.18;
       }
       if (dist < jogador.raio + p.raio) {
-        ganharExp(p.valor);
+        if (p.tipo === "moeda") {
+          ganharMoedas(p.valor);
+        } else {
+          ganharExp(p.valor);
+        }
         pickups.splice(i, 1);
       }
     }
@@ -761,6 +1083,18 @@
       subirNivel();
     }
     atualizarHud();
+  }
+
+  function ganharMoedas(valor) {
+    jogador.moedas += valor;
+    bancoMoedas += valor;
+    salvarBancoMoedas();
+    atualizarCarteiraMenu();
+    atualizarHud();
+  }
+
+  function atualizarCarteiraMenu() {
+    if (elTextoMoedasBanco) elTextoMoedasBanco.textContent = bancoMoedas;
   }
 
   function subirNivel() {
@@ -863,7 +1197,7 @@
           if (z.vida > 0) continue; // chefe sobrevive, só perde vida
         }
 
-        pickups.push({ x: z.x, y: z.y, valor: z.dropExp, raio: 7, fase: 0 });
+        soltarDrops(z);
         zumbis.splice(i, 1);
         jogador.abates += 1;
         onZumbiMorto();
@@ -1033,7 +1367,9 @@
         cor: def.corProjetil,
         raio: raioProjetil,
         vida: vidaProjetil,
-        espinafre: espinafreAtivo
+        espinafre: espinafreAtivo,
+        tipoArma: jogador.armaAtual,
+        frameConta: 0  // contador para otimizar criação de partículas
       });
     }
 
@@ -1051,6 +1387,12 @@
       p.x += p.vx;
       p.y += p.vy;
       p.vida -= 1;
+      p.frameConta = (p.frameConta || 0) + 1;
+
+      // criar partículas de chama para lança-chamas (apenas a cada 2 frames)
+      if (p.tipoArma === "lanca_chamas" && p.frameConta % 2 === 0) {
+        criarParticulasChama(p.x, p.y, p.vx, p.vy);
+      }
 
       let atingiu = false;
       for (let j = zumbis.length - 1; j >= 0; j--) {
@@ -1081,17 +1423,10 @@
     if (teclasPressionadas["a"] || teclasPressionadas["arrowleft"]) dx -= 1;
     if (teclasPressionadas["d"] || teclasPressionadas["arrowright"]) dx += 1;
 
-    // soma o manche virtual de movimento (mobile) — vetor analógico
-    dx += toqueMovimentoX;
-    dy += toqueMovimentoY;
-
-    const magnitude = Math.hypot(dx, dy);
-    if (magnitude > 0.05) {
-      // no teclado o fator fica sempre travado em 1 (mesma velocidade de sempre);
-      // no manche virtual ele acompanha o quanto o polegar empurrou o manche
-      const fator = Math.min(magnitude, 1);
-      jogador.x += (dx / magnitude) * jogador.velocidade * fator;
-      jogador.y += (dy / magnitude) * jogador.velocidade * fator;
+    if (dx !== 0 || dy !== 0) {
+      const norm = Math.hypot(dx, dy);
+      jogador.x += (dx / norm) * jogador.velocidade;
+      jogador.y += (dy / norm) * jogador.velocidade;
     }
 
     jogador.x = Math.max(jogador.raio, Math.min(canvas.width - jogador.raio, jogador.x));
@@ -1102,38 +1437,202 @@
   // DESENHO — CENÁRIO
   // ----------------------------------------------------------
   function desenharCenario() {
+    // Fundo base do hospital
     ctx.fillStyle = "#1d1f1a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Renderizar elementos em ordem de profundidade
+    elementosCenario.forEach(el => {
+      if (el.tipo === "fundo_sala") {
+        ctx.fillStyle = el.cor;
+        ctx.fillRect(el.x, el.y, el.largura, el.altura);
+      }
+    });
+
+    // Pisos/manchas
     elementosCenario.forEach(el => {
       if (el.tipo === "mancha") {
         ctx.beginPath();
         ctx.fillStyle = el.cor;
         ctx.ellipse(el.x, el.y, el.raio, el.raio * 0.6, 0, 0, Math.PI * 2);
         ctx.fill();
-      } else if (el.tipo === "racha") {
-        ctx.strokeStyle = "rgba(0,0,0,0.4)";
-        ctx.lineWidth = 1.5;
+      } else if (el.tipo === "poca") {
         ctx.beginPath();
-        ctx.moveTo(el.x, el.y);
-        ctx.lineTo(el.x + Math.cos(el.angulo) * el.comprimento, el.y + Math.sin(el.angulo) * el.comprimento);
+        ctx.fillStyle = "rgba(30,20,20,0.35)";
+        ctx.ellipse(el.x, el.y, el.raio, el.raio * 0.5, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(50,30,30,0.3)";
+        ctx.lineWidth = 1;
         ctx.stroke();
-      } else if (el.tipo === "detrito") {
+      } else if (el.tipo === "mancha_sangue_grande") {
+        ctx.fillStyle = "rgba(122,31,31,0.25)";
+        ctx.beginPath();
+        ctx.ellipse(el.x, el.y, el.raio, el.raio * 0.7, Math.random() * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    // Móveis/estruturas
+    elementosCenario.forEach(el => {
+      if (el.tipo === "cama_hospital") {
         ctx.save();
         ctx.translate(el.x, el.y);
         ctx.rotate(el.angulo);
-        ctx.fillStyle = "rgba(60,58,50,0.7)";
+        // Frame da cama
+        ctx.strokeStyle = "#4a5a40";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-35, -20, 70, 40);
+        // Colchão
+        ctx.fillStyle = "rgba(100,80,60,0.6)";
+        ctx.fillRect(-32, -16, 64, 32);
+        // Barraca lateral
+        ctx.strokeStyle = "#3a4a30";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-32, -20);
+        ctx.lineTo(-32, -35);
+        ctx.stroke();
+        ctx.restore();
+      } else if (el.tipo === "maca") {
+        ctx.save();
+        ctx.translate(el.x, el.y);
+        ctx.rotate(el.angulo);
+        ctx.fillStyle = "rgba(140,120,100,0.7)";
+        ctx.fillRect(-40, -15, 80, 30);
+        ctx.strokeStyle = "#5a4a3a";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-40, -15, 80, 30);
+        ctx.restore();
+      } else if (el.tipo === "mesa_cirurgia") {
+        ctx.save();
+        ctx.translate(el.x, el.y);
+        ctx.rotate(el.angulo);
+        // Superfície
+        ctx.fillStyle = "rgba(140,150,160,0.6)";
+        ctx.fillRect(-50, -30, 100, 60);
+        ctx.strokeStyle = "#8fb8a8";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-50, -30, 100, 60);
+        // Manchas de sangue
+        ctx.fillStyle = "rgba(122,31,31,0.4)";
+        ctx.fillRect(-20, -10, 40, 20);
+        ctx.restore();
+      } else if (el.tipo === "caixa") {
+        ctx.save();
+        ctx.translate(el.x, el.y);
+        ctx.rotate(el.angulo);
+        ctx.fillStyle = "rgba(100,90,70,0.7)";
         ctx.fillRect(-el.largura / 2, -el.altura / 2, el.largura, el.altura);
-        ctx.strokeStyle = "rgba(0,0,0,0.5)";
+        ctx.strokeStyle = "#4a443a";
+        ctx.lineWidth = 2;
         ctx.strokeRect(-el.largura / 2, -el.altura / 2, el.largura, el.altura);
+        ctx.restore();
+      } else if (el.tipo === "gaveta_morgue") {
+        // Gavetão da morgue
+        ctx.fillStyle = "rgba(60,55,45,0.8)";
+        ctx.fillRect(el.x, el.y, 60, 35);
+        ctx.strokeStyle = "#3a3a30";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(el.x, el.y, 60, 35);
+        // Maçaneta
+        ctx.fillStyle = "#7a7a60";
+        ctx.beginPath();
+        ctx.arc(el.x + 50, el.y + 17, 3, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (el.tipo === "entulho") {
+        ctx.save();
+        ctx.translate(el.x, el.y);
+        ctx.rotate(el.angulo);
+        ctx.fillStyle = "rgba(50,45,35,0.8)";
+        ctx.fillRect(-el.largura / 2, -el.altura / 2, el.largura, el.altura);
         ctx.restore();
       }
     });
 
-    // grade de azulejos sutil
-    ctx.strokeStyle = "rgba(0,0,0,0.12)";
+    // Detalhes (rachas, trilhas)
+    elementosCenario.forEach(el => {
+      if (el.tipo === "racha") {
+        ctx.strokeStyle = `rgba(0,0,0,${0.2 + Math.random() * 0.2})`;
+        ctx.lineWidth = el.espessura || 1.5;
+        ctx.beginPath();
+        ctx.moveTo(el.x, el.y);
+        ctx.lineTo(el.x + Math.cos(el.angulo) * el.comprimento, el.y + Math.sin(el.angulo) * el.comprimento);
+        ctx.stroke();
+      } else if (el.tipo === "trilha_sangue") {
+        ctx.strokeStyle = "rgba(122,31,31,0.15)";
+        ctx.lineWidth = el.espessura;
+        ctx.beginPath();
+        ctx.moveTo(el.x1, el.y1);
+        ctx.lineTo(el.x2, el.y2);
+        ctx.stroke();
+      } else if (el.tipo === "osso") {
+        ctx.save();
+        ctx.translate(el.x, el.y);
+        ctx.rotate(el.angulo);
+        ctx.fillStyle = "rgba(200,190,170,0.5)";
+        if (el.tamanho === "grande") {
+          ctx.fillRect(-25, -4, 50, 8);
+          ctx.beginPath();
+          ctx.arc(-25, 0, 6, 0, Math.PI * 2);
+          ctx.arc(25, 0, 6, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillRect(-12, -2, 24, 4);
+          ctx.beginPath();
+          ctx.arc(-12, 0, 3, 0, Math.PI * 2);
+          ctx.arc(12, 0, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      } else if (el.tipo === "placa_porta") {
+        ctx.fillStyle = "rgba(255,90,61,0.3)";
+        ctx.fillRect(el.x, el.y, 50, 40);
+        ctx.strokeStyle = "#ff5a3d";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(el.x, el.y, 50, 40);
+        ctx.fillStyle = "#ff5a3d";
+        ctx.font = "bold 10px 'Share Tech Mono'";
+        ctx.textAlign = "center";
+        ctx.fillText(el.texto, el.x + 25, el.y + 25);
+      }
+    });
+
+    // Paredes e divisões
+    elementosCenario.forEach(el => {
+      if (el.tipo === "parede_sala") {
+        ctx.strokeStyle = "rgba(40,35,25,0.4)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(el.x, el.y, el.largura, el.altura);
+      }
+    });
+
+    // Labels das salas
+    elementosCenario.forEach(el => {
+      if (el.tipo === "label_sala") {
+        ctx.fillStyle = "rgba(212,207,154,0.2)";
+        ctx.font = `${el.tamanho}px 'Share Tech Mono', monospace`;
+        ctx.textAlign = "left";
+        ctx.fillText(el.texto, el.x, el.y);
+      }
+    });
+
+    // Focos de luz (vinheta suave das salas)
+    elementosCenario.forEach(el => {
+      if (el.tipo === "foco_luz") {
+        const gradient = ctx.createRadialGradient(el.x, el.y, 0, el.x, el.y, el.raio);
+        gradient.addColorStop(0, "rgba(212,207,154,0.08)");
+        gradient.addColorStop(1, "rgba(212,207,154,0)");
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(el.x, el.y, el.raio, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    // Grade de azulejos sutil (fundo)
+    ctx.strokeStyle = "rgba(0,0,0,0.08)";
     ctx.lineWidth = 1;
-    const tamanho = 64;
+    const tamanho = 80;
     for (let x = 0; x < canvas.width; x += tamanho) {
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
     }
@@ -1434,30 +1933,94 @@
   function desenharProjeteis() {
     projeteis.forEach(p => {
       const raioDesenho = p.raio || 3;
-      ctx.beginPath();
-      ctx.fillStyle = p.espinafre ? "#6fff8f" : p.cor;
-      ctx.shadowColor = p.espinafre ? "#6fff8f" : p.cor;
-      ctx.shadowBlur = p.espinafre ? 14 : 6;
-      ctx.arc(p.x, p.y, raioDesenho, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      
+      // Efeito especial para lança-chamas (otimizado)
+      if (p.tipoArma === "lanca_chamas") {
+        // Uma única sombra ao invés de múltiplas
+        ctx.shadowColor = "#ffaa00";
+        ctx.shadowBlur = 8;
+        
+        // Camada externa (aura)
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(255, 170, 0, 0.25)";
+        ctx.arc(p.x, p.y, raioDesenho * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Camada média (laranja)
+        ctx.beginPath();
+        ctx.fillStyle = "#ff7a1f";
+        ctx.arc(p.x, p.y, raioDesenho * 1.4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Núcleo (amarelo)
+        ctx.beginPath();
+        ctx.fillStyle = "#ffaa00";
+        ctx.arc(p.x, p.y, raioDesenho, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.shadowBlur = 0;
+      } else {
+        // Desenho normal para outras armas
+        ctx.beginPath();
+        ctx.fillStyle = p.espinafre ? "#6fff8f" : p.cor;
+        ctx.shadowColor = p.espinafre ? "#6fff8f" : p.cor;
+        ctx.shadowBlur = p.espinafre ? 14 : 6;
+        ctx.arc(p.x, p.y, raioDesenho, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
     });
   }
 
   function desenharParticulas() {
     particulas.forEach(p => {
-      ctx.beginPath();
-      ctx.fillStyle = p.cor;
-      ctx.globalAlpha = Math.max(0, p.vida);
-      ctx.arc(p.x, p.y, p.raio, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
+      if (p.tipoParticula === "chama") {
+        // Partículas de chama simplificadas (sem dupla camada)
+        ctx.beginPath();
+        ctx.fillStyle = p.cor;
+        ctx.shadowColor = p.cor;
+        ctx.shadowBlur = 6;
+        ctx.globalAlpha = Math.max(0, p.vida * 0.8);
+        ctx.arc(p.x, p.y, p.raio, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+      } else {
+        // Partículas normais (sangue)
+        ctx.beginPath();
+        ctx.fillStyle = p.cor;
+        ctx.globalAlpha = Math.max(0, p.vida);
+        ctx.arc(p.x, p.y, p.raio, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
     });
   }
 
   function desenharPickups() {
     pickups.forEach(p => {
       const flutua = Math.sin(p.fase) * 3;
+
+      if (p.tipo === "moeda") {
+        // moeda dourada com anel interno, pra diferenciar do frasco de exp
+        ctx.beginPath();
+        ctx.fillStyle = "#ffcf3a";
+        ctx.shadowColor = "#ffcf3a";
+        ctx.shadowBlur = 8;
+        ctx.arc(p.x, p.y + flutua, p.raio, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "#8a6a10";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(138,106,16,0.6)";
+        ctx.lineWidth = 1;
+        ctx.arc(p.x, p.y + flutua, p.raio * 0.5, 0, Math.PI * 2);
+        ctx.stroke();
+        return;
+      }
+
       ctx.beginPath();
       ctx.fillStyle = "#6fff8f";
       ctx.shadowColor = "#6fff8f";
@@ -1493,8 +2056,9 @@
     elTextoMunicao.textContent = jogador.municao[jogador.armaAtual];
     elTextoMunicaoMax.textContent = def.municaoMax;
 
-    // abates
+    // abates e moedas
     elTextoAbates.textContent = jogador.abates;
+    elTextoMoedas.textContent = jogador.moedas;
   }
 
   function atualizarSlotsArma() {
@@ -1510,7 +2074,6 @@
 
     elSlotAnterior.textContent = lista.length > 1 ? DEFINICAO_ARMAS[chaveAnterior].nome : "—";
     elSlotProximo.textContent = lista.length > 1 ? DEFINICAO_ARMAS[chaveProxima].nome : "—";
-
   }
 
   // navega entre as 3 armas do loadout (circular), na direção indicada (1 ou -1)
@@ -1593,8 +2156,18 @@
     elNivelFinal.textContent = jogador.nivel;
     elAbatesFinal.textContent = jogador.abates;
     if (elOndaFinal) elOndaFinal.textContent = ondaInfo.numero || 1;
+    if (elMoedasFinal) elMoedasFinal.textContent = jogador.moedas;
     hud.classList.add("escondido");
     telaMorte.classList.remove("escondido");
+  }
+
+  // interrompe a partida em andamento (sem contar como derrota) e volta ao menu principal
+  function voltarAoMenu() {
+    jogoAtivo = false;
+    hud.classList.add("escondido");
+    telaMorte.classList.add("escondido");
+    telaInicio.classList.remove("escondido");
+    mostrarPainelMenu("menu");
   }
 
   function resetarEstado() {
@@ -1606,6 +2179,7 @@
     jogador.exp = 0;
     jogador.expParaSubir = 200;
     jogador.abates = 0;
+    jogador.moedas = 0;
     jogador.recarregando = false;
     jogador.ultimoTiroEm = 0;
 
@@ -1649,14 +2223,6 @@
     jogoAtivo = true;
     ultimoFrameTs = performance.now();
     requestAnimationFrame(loop);
-  }
-
-  function voltarAoMenuPrincipal() {
-    jogoAtivo = false;
-    telaMorte.classList.add("escondido");
-    hud.classList.add("escondido");
-    mostrarPainelMenu("menu");
-    telaInicio.classList.remove("escondido");
   }
 
   // ----------------------------------------------------------
@@ -1919,204 +2485,86 @@
   // previne menu de contexto ao clicar com botão direito (caso usado futuramente)
   window.addEventListener("contextmenu", (e) => e.preventDefault());
 
+  // ----------------------------------------------------------
+  // PAINEL DE COMPRAS — lógica de intervalo entre ondas
+  // ----------------------------------------------------------
+  const painelCompras = document.getElementById("painel-compras");
+  const btnFecharCompras = document.getElementById("btn-fechar-compras");
+  const btnPularOnda = document.getElementById("btn-pular-onda");
+  const elMoedasCompras = document.getElementById("moedas-compras");
+  const elTempoProximaOnda = document.getElementById("tempo-proxima-onda");
+
+  let intervaloAtualizacaoTempo = null;
+  let painelAberto = false;
+
+  function mostrarPainelCompras() {
+    if (!painelCompras.classList.contains("escondido")) return;
+    painelCompras.classList.remove("escondido");
+    painelAberto = true;
+    elMoedasCompras.textContent = bancoMoedas;
+    
+    // esconde botão de pular enquanto painel está aberto
+    btnPularOnda.classList.add("escondido");
+    
+    // inicia contagem regressiva
+    intervaloAtualizacaoTempo = setInterval(() => {
+      if (ondaInfo.emIntervalo) {
+        const restanteMs = Math.max(0, ondaInfo.tempoProximaOndaEm - agora());
+        const restanteS = Math.ceil(restanteMs / 1000);
+        elTempoProximaOnda.textContent = restanteS;
+      }
+    }, 100);
+  }
+
+  function fecharPainelCompras() {
+    painelCompras.classList.add("escondido");
+    painelAberto = false;
+    
+    // mostra botão de pular se estiver em intervalo
+    if (ondaInfo.emIntervalo) {
+      btnPularOnda.classList.remove("escondido");
+    }
+    
+    if (intervaloAtualizacaoTempo !== null) {
+      clearInterval(intervaloAtualizacaoTempo);
+      intervaloAtualizacaoTempo = null;
+    }
+  }
+
+  function pularProximaOnda() {
+    // pula para a próxima onda imediatamente
+    ondaInfo.tempoProximaOndaEm = agora();
+    btnPularOnda.classList.add("escondido");
+  }
+
+  btnFecharCompras.addEventListener("click", fecharPainelCompras);
+  btnPularOnda.addEventListener("click", pularProximaOnda);
+
+  // ----------------------------------------------------------
+  // OVERRIDE DA FUNÇÃO atualizarHudOnda PARA MOSTRAR PAINEL
+  // ----------------------------------------------------------
+  const atualizarHudOndaOriginal = atualizarHudOnda;
+  atualizarHudOnda = function() {
+    atualizarHudOndaOriginal();
+    
+    // Se entrou em intervalo e está em jogo (não no menu), mostra painel
+    if (ondaInfo.emIntervalo && !telaInicio.classList.contains("escondido") === false && !telaMorte.classList.contains("escondido") === false) {
+      mostrarPainelCompras();
+    } else if (!ondaInfo.emIntervalo) {
+      // esconde painel e botão quando onda começa
+      fecharPainelCompras();
+      btnPularOnda.classList.add("escondido");
+    }
+  };
+
   btnIniciar.addEventListener("click", iniciarJogo);
   btnReiniciar.addEventListener("click", iniciarJogo);
-  btnMenuMorte.addEventListener("click", voltarAoMenuPrincipal);
-
-  // ----------------------------------------------------------
-  // CONTROLES DE TOQUE (MOBILE) — dois manches virtuais + botões
-  // ----------------------------------------------------------
-  const ehDispositivoToque = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
-  if (ehDispositivoToque) {
-    document.body.classList.add("dispositivo-toque");
-  }
-
-  const RAIO_MANCHE = 45; // deslocamento máximo (px) do manche a partir do centro
-
-  // --- manche esquerdo: movimento (equivalente analógico do WASD) ---
-  const zonaMovimento     = document.getElementById("zona-joystick-movimento");
-  const baseMovimento     = document.getElementById("base-joystick-movimento");
-  const manivelaMovimento = document.getElementById("manivela-joystick-movimento");
-  let idToqueMovimento = null;
-  let centroMovimentoX = 0, centroMovimentoY = 0;
-
-  function moverManivela(elManivela, dx, dy) {
-    elManivela.style.transform = `translate(${dx}px, ${dy}px)`;
-  }
-
-  function iniciarToqueMovimento(toque) {
-    idToqueMovimento = toque.identifier;
-    const rect = baseMovimento.getBoundingClientRect();
-    centroMovimentoX = rect.left + rect.width / 2;
-    centroMovimentoY = rect.top + rect.height / 2;
-    atualizarToqueMovimento(toque);
-  }
-
-  function atualizarToqueMovimento(toque) {
-    const dx = toque.clientX - centroMovimentoX;
-    const dy = toque.clientY - centroMovimentoY;
-    const dist = Math.hypot(dx, dy);
-    const distLimitada = Math.min(dist, RAIO_MANCHE);
-    const angulo = Math.atan2(dy, dx);
-    const kx = Math.cos(angulo) * distLimitada;
-    const ky = Math.sin(angulo) * distLimitada;
-    moverManivela(manivelaMovimento, kx, ky);
-    toqueMovimentoX = kx / RAIO_MANCHE;
-    toqueMovimentoY = ky / RAIO_MANCHE;
-  }
-
-  function finalizarToqueMovimento() {
-    idToqueMovimento = null;
-    toqueMovimentoX = 0;
-    toqueMovimentoY = 0;
-    moverManivela(manivelaMovimento, 0, 0);
-  }
-
-  zonaMovimento.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    if (idToqueMovimento !== null) return;
-    iniciarToqueMovimento(e.changedTouches[0]);
-  }, { passive: false });
-
-  zonaMovimento.addEventListener("touchmove", (e) => {
-    e.preventDefault();
-    for (const toque of e.changedTouches) {
-      if (toque.identifier === idToqueMovimento) atualizarToqueMovimento(toque);
-    }
-  }, { passive: false });
-
-  function finalizarSeForToqueMovimento(e) {
-    for (const toque of e.changedTouches) {
-      if (toque.identifier === idToqueMovimento) finalizarToqueMovimento();
-    }
-  }
-  zonaMovimento.addEventListener("touchend", finalizarSeForToqueMovimento);
-  zonaMovimento.addEventListener("touchcancel", finalizarSeForToqueMovimento);
-
-  // --- manche direito: mira + tiro contínuo (equivalente do mouse) ---
-  const zonaMira     = document.getElementById("zona-joystick-mira");
-  const baseMira     = document.getElementById("base-joystick-mira");
-  const manivelaMira = document.getElementById("manivela-joystick-mira");
-  let idToqueMira = null;
-  let centroMiraX = 0, centroMiraY = 0;
-
-  function dispararSeNaoAutomatica() {
-    if (!jogoAtivo) return;
-    const def = DEFINICAO_ARMAS[jogador.armaAtual];
-    if (!def.automatica) {
-      tentarAtirar(agora());
-    }
-  }
-
-  function iniciarToqueMira(toque) {
-    idToqueMira = toque.identifier;
-    const rect = baseMira.getBoundingClientRect();
-    centroMiraX = rect.left + rect.width / 2;
-    centroMiraY = rect.top + rect.height / 2;
-    teclasPressionadas["mouse"] = true;
-    dispararSeNaoAutomatica();
-  }
-
-  function atualizarToqueMira(toque) {
-    const dx = toque.clientX - centroMiraX;
-    const dy = toque.clientY - centroMiraY;
-    const dist = Math.hypot(dx, dy);
-    if (dist < 8) return; // ignora tremores mínimos, mantém a última direção mirada
-    const distLimitada = Math.min(dist, RAIO_MANCHE);
-    const angulo = Math.atan2(dy, dx);
-    moverManivela(manivelaMira, Math.cos(angulo) * distLimitada, Math.sin(angulo) * distLimitada);
-
-    // só a direção importa (tentarAtirar usa atan2), então projeta a mira
-    // bem à frente do jogador na direção do manche
-    if (jogoAtivo) {
-      mouseX = jogador.x + Math.cos(angulo) * 400;
-      mouseY = jogador.y + Math.sin(angulo) * 400;
-    }
-  }
-
-  function finalizarToqueMira() {
-    idToqueMira = null;
-    teclasPressionadas["mouse"] = false;
-    moverManivela(manivelaMira, 0, 0);
-  }
-
-  zonaMira.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    if (idToqueMira !== null) return;
-    iniciarToqueMira(e.changedTouches[0]);
-  }, { passive: false });
-
-  zonaMira.addEventListener("touchmove", (e) => {
-    e.preventDefault();
-    for (const toque of e.changedTouches) {
-      if (toque.identifier === idToqueMira) atualizarToqueMira(toque);
-    }
-  }, { passive: false });
-
-  function finalizarSeForToqueMira(e) {
-    for (const toque of e.changedTouches) {
-      if (toque.identifier === idToqueMira) finalizarToqueMira();
-    }
-  }
-  zonaMira.addEventListener("touchend", finalizarSeForToqueMira);
-  zonaMira.addEventListener("touchcancel", finalizarSeForToqueMira);
-
-  // --- botões de ação: recarregar (R) e poder ativo (Q) ---
-  function ligarBotaoToque(el, handler) {
-    el.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      handler();
-    }, { passive: false });
-    // mantém o click funcionando também para mouse/trackpad em telas híbridas
-    el.addEventListener("click", handler);
-  }
-
-  ligarBotaoToque(document.getElementById("btn-toque-recarregar"), () => {
-    if (jogoAtivo) tentarRecarregar();
-  });
-  ligarBotaoToque(document.getElementById("btn-toque-poder"), () => {
-    if (jogoAtivo) usarPoderAtivo(agora());
-  });
-
-  // --- botão ATIRAR dedicado (mobile) ---
-  const btnTouqueAtirar = document.getElementById("btn-toque-atirar");
-
-  btnTouqueAtirar.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    if (!jogoAtivo) return;
-    teclasPressionadas["mouse"] = true;
-    const def = DEFINICAO_ARMAS[jogador.armaAtual];
-    if (!def.automatica) {
-      tentarAtirar(agora());
-    }
-  }, { passive: false });
-
-  btnTouqueAtirar.addEventListener("touchend", (e) => {
-    e.preventDefault();
-    // só desativa o tiro se o joystick de mira também não estiver ativo
-    if (idToqueMira === null) teclasPressionadas["mouse"] = false;
-  }, { passive: false });
-
-  btnTouqueAtirar.addEventListener("touchcancel", (e) => {
-    e.preventDefault();
-    if (idToqueMira === null) teclasPressionadas["mouse"] = false;
-  }, { passive: false });
-
-  // fallback click para telas híbridas
-  btnTouqueAtirar.addEventListener("click", () => {
-    if (!jogoAtivo) return;
-    const def = DEFINICAO_ARMAS[jogador.armaAtual];
-    if (!def.automatica) tentarAtirar(agora());
-  });
-
-  // --- setas/slots da barra de inventário também viram tocáveis ---
-  document.getElementById("seta-anterior").addEventListener("click", () => { if (jogoAtivo) navegarInventario(-1); });
-  document.getElementById("seta-proxima").addEventListener("click", () => { if (jogoAtivo) navegarInventario(1); });
-  document.getElementById("slot-anterior").addEventListener("click", () => { if (jogoAtivo) navegarInventario(-1); });
-  document.getElementById("slot-proximo").addEventListener("click", () => { if (jogoAtivo) navegarInventario(1); });
+  btnMenuMorte.addEventListener("click", voltarAoMenu);
+  btnMenuHud.addEventListener("click", voltarAoMenu);
 
   // estado inicial visual do cenário (antes de iniciar)
   gerarCenario();
   desenharCenario();
+  atualizarCarteiraMenu();
 
 })();

@@ -29,15 +29,356 @@ html, body {
   font-family: 'Share Tech Mono', monospace;
   color: var(--bege-fluor);
   cursor: crosshair;
-  overscroll-behavior: none;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
 }
 
-/* em telas de toque não faz sentido manter a mira de crosshair do mouse */
-body.dispositivo-toque {
-  cursor: default;
+/* ============================================================
+   PAINEL DE COMPRAS — "ARMARIA IMPROVIZADA"
+   ============================================================ */
+
+.painel-compras {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  background: 
+    linear-gradient(135deg, rgba(58,74,63,0.95) 0%, rgba(42,43,40,0.98) 50%, rgba(26,26,23,0.95) 100%);
+  border: 3px solid var(--bege-fluor);
+  box-shadow: 
+    0 0 40px rgba(212,207,154,0.3),
+    inset 0 0 60px rgba(212,207,154,0.1),
+    0 0 100px rgba(122,31,31,0.2);
+  border-radius: 8px;
+  padding: 40px 30px 30px;
+  overflow-y: auto;
+  animation: painel-entrada 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.painel-compras::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: 
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.painel-compras::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: 
+    repeating-linear-gradient(90deg, transparent 0px, transparent 2px, rgba(212,207,154,0.05) 2px, transparent 4px);
+  pointer-events: none;
+  z-index: 1;
+  animation: flicker-holografico 0.15s infinite;
+}
+
+@keyframes painel-entrada {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85) rotateX(20deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotateX(0);
+  }
+}
+
+@keyframes flicker-holografico {
+  0%, 100% { opacity: 0.03; }
+  50% { opacity: 0.08; }
+}
+
+/* Botão de fechar estilo portal/holograma */
+.btn-fechar-compras {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle at 30% 30%, rgba(212,207,154,0.3), rgba(58,74,63,0.8));
+  border: 2px solid var(--bege-fluor);
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 0 20px rgba(212,207,154,0.4),
+    inset 0 0 20px rgba(212,207,154,0.1);
+  font-size: 0;
+  overflow: hidden;
+}
+
+.btn-fechar-compras::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(212,207,154,0.5) 25%, transparent 50%);
+  animation: girar-portal 3s linear infinite;
+}
+
+.btn-fechar-compras::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: 
+    repeating-conic-gradient(from 0deg, transparent 0deg 10deg, rgba(212,207,154,0.2) 10deg 20deg);
+  animation: girar-portal 5s linear infinite reverse;
+}
+
+.fechar-x {
+  position: relative;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fechar-x::before,
+.fechar-x::after {
+  content: '';
+  position: absolute;
+  background: var(--bege-fluor);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(212,207,154,0.8);
+}
+
+.fechar-x::before {
+  width: 20px;
+  height: 3px;
+  transform: rotate(45deg);
+}
+
+.fechar-x::after {
+  width: 20px;
+  height: 3px;
+  transform: rotate(-45deg);
+}
+
+@keyframes girar-portal {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.btn-fechar-compras:hover {
+  transform: scale(1.15);
+  box-shadow: 
+    0 0 30px rgba(212,207,154,0.6),
+    inset 0 0 30px rgba(212,207,154,0.2),
+    0 0 60px rgba(212,207,154,0.3);
+}
+
+.btn-fechar-compras:active {
+  transform: scale(0.95);
+}
+
+/* Header do painel */
+.compras-header {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--bege-fluor);
+  padding-bottom: 15px;
+}
+
+.titulo-compras {
+  font-family: 'Creepster', cursive;
+  font-size: 28px;
+  color: var(--bege-fluor);
+  text-shadow: 
+    0 0 10px rgba(212,207,154,0.8),
+    2px 2px 0 var(--vermelho-vivo);
+  letter-spacing: 2px;
+  margin-bottom: 5px;
+}
+
+.subtitulo-compras {
+  font-size: 12px;
+  color: var(--soro-azul);
+  font-style: italic;
+  letter-spacing: 1px;
+}
+
+/* Saldo de moedas */
+.compras-saldo {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(58,74,63,0.4);
+  border: 1px solid var(--soro-azul);
+  border-radius: 4px;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.label-saldo {
+  color: var(--soro-azul);
+}
+
+.valor-saldo {
+  font-size: 18px;
+  font-weight: bold;
+  color: #e4c300;
+  text-shadow: 0 0 10px rgba(228,195,0,0.6);
+}
+
+/* Grade de itens */
+.grade-itens-compra {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.grade-itens-compra::-webkit-scrollbar {
+  width: 6px;
+}
+
+.grade-itens-compra::-webkit-scrollbar-track {
+  background: rgba(58,74,63,0.3);
+  border-radius: 3px;
+}
+
+.grade-itens-compra::-webkit-scrollbar-thumb {
+  background: var(--bege-fluor);
+  border-radius: 3px;
+}
+
+.placeholder-compras {
+  text-align: center;
+  color: var(--verde-musgo-claro);
+  font-size: 13px;
+  padding: 40px 20px;
+  opacity: 0.6;
+}
+
+/* Rodapé do painel */
+.compras-rodape {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  font-size: 12px;
+  color: var(--bege-fluor);
+  padding-top: 12px;
+  border-top: 1px dashed var(--verde-musgo-claro);
+  letter-spacing: 1px;
+}
+
+.tempo-onda {
+  font-weight: bold;
+  color: var(--vermelho-vivo);
+  font-size: 14px;
+  text-shadow: 0 0 8px rgba(181,48,48,0.6);
+}
+
+/* ============================================================
+   BOTÃO: PULAR ONDA
+   ============================================================ */
+
+.btn-pular-onda {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  z-index: 95;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, var(--verde-musgo) 0%, rgba(92,114,99,0.8) 100%);
+  border: 2px solid var(--bege-fluor);
+  border-radius: 50px;
+  color: var(--bege-fluor);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 
+    0 0 30px rgba(212,207,154,0.3),
+    inset 0 0 30px rgba(212,207,154,0.05),
+    0 0 60px rgba(92,114,99,0.4);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: flutuacao-botao 2s ease-in-out infinite;
+  white-space: nowrap;
+}
+
+@keyframes flutuacao-botao {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.btn-pular-onda::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50px;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(212,207,154,0.3) 25%, transparent 50%);
+  animation: girar-botao 3s linear infinite;
+  z-index: -1;
+}
+
+@keyframes girar-botao {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.icone-pular {
+  font-size: 16px;
+  animation: pulsacao-raio 0.8s ease-in-out infinite;
+}
+
+@keyframes pulsacao-raio {
+  0%, 100% { 
+    transform: scale(1);
+    text-shadow: 0 0 8px rgba(212,207,154,0.6);
+  }
+  50% { 
+    transform: scale(1.3);
+    text-shadow: 0 0 16px rgba(212,207,154,1);
+  }
+}
+
+.btn-pular-onda:hover {
+  transform: translateY(-8px) scale(1.08);
+  background: linear-gradient(135deg, #5c7263 0%, rgba(112,114,99,0.9) 100%);
+  box-shadow: 
+    0 0 50px rgba(212,207,154,0.5),
+    inset 0 0 40px rgba(212,207,154,0.1),
+    0 0 80px rgba(92,114,99,0.6);
+  border-color: #ffff00;
+}
+
+.btn-pular-onda:active {
+  transform: translateY(-4px) scale(0.98);
+}
+
+.btn-pular-onda.escondido {
+  display: none !important;
 }
 
 #canvas-jogo {
@@ -46,7 +387,6 @@ body.dispositivo-toque {
   left: 0;
   display: block;
   background: radial-gradient(ellipse at center, #20221f 0%, #0d0d0c 100%);
-  touch-action: none;
 }
 
 /* ============================================================
@@ -307,6 +647,15 @@ body.dispositivo-toque {
 
 .instrucoes-filme strong {
   color: #ff5a3d;
+}
+
+.carteira-moedas {
+  margin-top: 14px;
+  font-family: 'VT323', monospace;
+  font-size: 19px;
+  letter-spacing: 2px;
+  color: #ffcf3a;
+  text-shadow: 0 0 8px rgba(255,207,58,0.5);
 }
 
 .estatisticas-morte {
@@ -719,10 +1068,6 @@ body.dispositivo-toque {
   border-color: #ff8a3d;
 }
 
-#btn-menu-morte {
-  margin-top: 12px;
-}
-
 @media (max-width: 640px) {
   .grade-armas {
     grid-template-columns: repeat(2, 1fr);
@@ -890,16 +1235,49 @@ body.dispositivo-toque {
   opacity: 0.8;
 }
 
-/* --- Painel de Munição (seringa) --- */
-.painel-municao {
+/* --- Coluna superior direita: agrupa munição + botão de menu --- */
+.coluna-hud-direita {
   position: absolute;
   top: 18px;
   right: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+/* --- Painel de Munição (seringa) --- */
+.painel-municao {
   background: rgba(26,26,23,0.78);
   border: 1px solid var(--vermelho-emerg);
   padding: 10px 14px;
   width: 210px;
   text-align: right;
+}
+
+/* --- Botão de voltar ao menu, durante a partida --- */
+.botao-menu-hud {
+  pointer-events: auto;
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+  background: rgba(26,26,23,0.78);
+  border: 1px solid var(--verde-musgo-claro);
+  color: var(--bege-fluor);
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, transform 0.1s;
+}
+
+.botao-menu-hud:hover {
+  border-color: #ff5a3d;
+  color: #ff5a3d;
+}
+
+.botao-menu-hud:active {
+  transform: scale(0.97);
 }
 
 .painel-municao .rotulo-painel {
@@ -1153,121 +1531,6 @@ body.dispositivo-toque {
   100% { opacity: 0; transform: translate(-50%, -65%) scale(1); }
 }
 
-/* ============================================================
-   CONTROLES DE TOQUE (MOBILE) — dois manches virtuais + botões
-   ============================================================ */
-
-.controles-toque {
-  position: absolute;
-  inset: 0;
-  z-index: 25;
-  pointer-events: none;
-  display: none; /* só aparece em dispositivos de toque, ver body.dispositivo-toque abaixo */
-}
-
-body.dispositivo-toque .controles-toque {
-  display: block;
-}
-
-/* some com o texto de dica de teclado quando os manches virtuais estão ativos */
-body.dispositivo-toque .instrucoes-filme,
-body.dispositivo-toque .dica-inventario {
-  display: none;
-}
-
-.zona-joystick {
-  position: absolute;
-  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  width: 132px;
-  height: 132px;
-  pointer-events: auto;
-  touch-action: none;
-}
-
-.zona-joystick-esquerda { left: calc(14px + env(safe-area-inset-left, 0px)); }
-.zona-joystick-direita  { right: calc(14px + env(safe-area-inset-right, 0px)); }
-
-.base-joystick {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: rgba(26,26,23,0.55);
-  border: 2px solid var(--verde-musgo-claro);
-  box-shadow: 0 0 16px rgba(0,0,0,0.5) inset;
-}
-
-.base-joystick-mira {
-  border-color: var(--vermelho-emerg);
-}
-
-.manivela-joystick {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 56px;
-  height: 56px;
-  margin: -28px 0 0 -28px;
-  border-radius: 50%;
-  background: linear-gradient(180deg, rgba(92,114,99,0.9) 0%, rgba(26,26,23,0.9) 100%);
-  border: 2px solid var(--bege-fluor);
-  box-shadow: 0 0 10px rgba(212,207,154,0.4);
-  transition: transform 0.05s linear;
-}
-
-.manivela-joystick-mira {
-  background: linear-gradient(180deg, rgba(181,48,48,0.9) 0%, rgba(26,26,23,0.9) 100%);
-  border-color: #ff8a3d;
-}
-
-.coluna-botoes-acao {
-  position: absolute;
-  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
-  right: calc(158px + env(safe-area-inset-right, 0px));
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  pointer-events: auto;
-}
-
-.botao-toque {
-  width: 62px;
-  height: 62px;
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  background: linear-gradient(180deg, rgba(40,38,32,0.9) 0%, rgba(18,17,14,0.95) 100%);
-  border: 2px solid #4a443a;
-  color: #d8d4c0;
-  font-family: 'Share Tech Mono', monospace;
-  cursor: pointer;
-  touch-action: none;
-}
-
-.botao-toque:active {
-  transform: scale(0.94);
-  border-color: #ff5a3d;
-}
-
-.botao-toque-letra {
-  font-family: 'VT323', monospace;
-  font-size: 20px;
-  line-height: 1;
-  color: #ff5a3d;
-}
-
-.botao-toque-rotulo {
-  font-size: 7px;
-  letter-spacing: 0.5px;
-  opacity: 0.75;
-  text-transform: uppercase;
-}
-
-.botao-toque-poder .botao-toque-letra { color: #6fff8f; }
-
 /* --- Texto de grito "SAI CAPETA" --- */
 .grito-capeta {
   position: absolute;
@@ -1286,156 +1549,4 @@ body.dispositivo-toque .dica-inventario {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
   25%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
   100% { opacity: 0; transform: translate(-50%, -80%) scale(1.3); }
-}
-
-/* ============================================================
-   LAYOUT MOBILE — reorganiza o HUD para caber em telas estreitas
-   e abrir espaço para os manches virtuais nos cantos inferiores
-   ============================================================ */
-
-@media (max-width: 820px) {
-
-  /* --- pôsteres de menu / morte mais compactos --- */
-  .cartaz-filme {
-    padding: 20px 18px 24px;
-    width: min(560px, 94vw);
-  }
-  .palavra-titulo { font-size: 48px; }
-  .titulo-secao { font-size: 32px; }
-  .tagline-filme { font-size: 15px; }
-  .instrucoes-filme { font-size: 11px; line-height: 1.7; }
-  .grade-armas { grid-template-columns: repeat(2, 1fr); max-height: 40vh; }
-  .grade-skins { grid-template-columns: repeat(2, 1fr); }
-  .grade-poderes { grid-template-columns: 1fr; }
-
-  /* --- painéis do HUD: menores e reempilhados para não colidir --- */
-  .painel-soro {
-    top: 10px;
-    left: 10px;
-    width: 130px;
-    padding: 6px 9px;
-  }
-
-  .painel-monitor {
-    top: 62px;
-    left: 10px;
-    width: 130px;
-    padding: 6px 9px;
-  }
-
-  .painel-municao {
-    top: 10px;
-    right: 10px;
-    width: 130px;
-    padding: 6px 9px;
-  }
-  .seringa-corpo { width: 80px; }
-
-  .painel-onda {
-    top: 10px;
-    min-width: 110px;
-    padding: 6px 10px;
-  }
-
-  .painel-abates {
-    top: 116px;
-    left: 10px;
-    bottom: auto;
-    padding: 5px 10px;
-    font-size: 11px;
-  }
-
-  .painel-poder {
-    top: 62px;
-    right: 10px;
-    bottom: auto;
-    width: 130px;
-    padding: 6px 9px;
-    text-align: right;
-  }
-
-  .rotulo-painel { font-size: 11px; margin-bottom: 2px; }
-  .soro-valor, .exp-valor, .municao-valor { font-size: 9px; }
-
-  /* --- barra de inventário sobe para abrir espaço aos manches --- */
-  .barra-inventario {
-    bottom: calc(158px + env(safe-area-inset-bottom, 0px));
-    gap: 5px;
-  }
-  .slot-anterior, .slot-proximo {
-    min-width: 60px;
-    max-width: 80px;
-    padding: 5px 7px;
-    font-size: 9px;
-  }
-  .slot-atual {
-    min-width: 100px;
-    max-width: 150px;
-    padding: 6px 14px;
-  }
-  .slot-atual-nome { font-size: 12px; }
-
-  /* --- avisos centrais um pouco menores --- */
-  .aviso-onda { font-size: 30px; }
-  .aviso-nivel { font-size: 24px; }
-}
-
-/* --- Botão ATIRAR dedicado (mobile) --- */
-.botao-atirar-mobile {
-  display: none; /* só aparece em dispositivo-toque */
-  position: absolute;
-  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  background: linear-gradient(180deg, #7a1f1f 0%, #4a1010 100%);
-  border: 3px solid #b53030;
-  box-shadow: 0 0 20px rgba(181,48,48,0.55), 0 0 0 2px rgba(0,0,0,0.6);
-  color: #f0ece0;
-  font-family: 'Share Tech Mono', monospace;
-  cursor: pointer;
-  touch-action: none;
-  pointer-events: auto;
-  z-index: 26;
-  transition: transform 0.08s, filter 0.1s;
-}
-
-.botao-atirar-mobile:active {
-  transform: translateX(-50%) scale(0.93);
-  filter: brightness(1.3);
-  border-color: #ff5a3d;
-}
-
-body.dispositivo-toque .botao-atirar-mobile {
-  display: flex;
-}
-
-.botao-atirar-icone {
-  font-size: 26px;
-  line-height: 1;
-  filter: drop-shadow(0 0 4px rgba(255,90,61,0.8));
-}
-
-.botao-atirar-rotulo {
-  font-family: 'VT323', monospace;
-  font-size: 13px;
-  letter-spacing: 1px;
-  color: #ff8a8a;
-  text-transform: uppercase;
-}
-
-
-@media (max-width: 480px) {
-  .zona-joystick { width: 112px; height: 112px; }
-  .manivela-joystick { width: 48px; height: 48px; margin: -24px 0 0 -24px; }
-  .coluna-botoes-acao { right: calc(136px + env(safe-area-inset-right, 0px)); gap: 8px; }
-  .botao-toque { width: 54px; height: 54px; }
-  .botao-atirar-mobile { width: 78px; height: 78px; }
-  .botao-atirar-icone { font-size: 22px; }
 }
