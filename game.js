@@ -416,6 +416,7 @@
   let projeteis = [];
   let zumbis = [];
   let particulas = [];     // sangue / impacto
+  let explosoes = [];      // explosões de granada (glow visual)
   let pickups = [];        // drops de exp (frasco verde)
   let ondasChoque = [];    // efeito visual do SAI CAPETA
 
@@ -430,292 +431,283 @@
   let faseEcg = 0;
 
   // ----------------------------------------------------------
-  // CENÁRIO: HOSPITAL ABANDONADO PROCEDURAL — MAPA ESTRUTURADO
-  // Salas temáticas, mobiliário, detalhes ambientais, iluminação
+  // CENÁRIO: HOSPITAL ABANDONADO (gerado proceduralmente)
+  // salas, manchas, detritos, fiação solta
   // ----------------------------------------------------------
   let elementosCenario = [];
-  let salasCenario = [];
-
-  // Tipos de salas e sua composição visual
-  const TIPOS_SALA = {
-    corredor: {
-      nome: "Corredor",
-      cor: "rgba(58, 74, 63, 0.15)",
-      detalhes: ["placa", "macas", "rachões", "poças"]
-    },
-    uti: {
-      nome: "UTI",
-      cor: "rgba(58, 74, 63, 0.2)",
-      detalhes: ["camas", "monitores", "seringas", "tubos"]
-    },
-    morgue: {
-      nome: "Morgue",
-      cor: "rgba(74, 30, 30, 0.12)",
-      detalhes: ["gavetões", "manchas", "ossos", "silhuetas"]
-    },
-    sala_cirurgia: {
-      nome: "Sala de Cirurgia",
-      cor: "rgba(143, 184, 168, 0.1)",
-      detalhes: ["mesa_cirurgia", "instrumentos", "sangue_seco", "luzes"]
-    },
-    almoxarifado: {
-      nome: "Almoxarifado",
-      cor: "rgba(58, 74, 63, 0.18)",
-      detalhes: ["caixas", "prateleiras", "garrafas", "bagunça"]
-    }
-  };
 
   function gerarCenario() {
     elementosCenario = [];
-    salasCenario = [];
     const largura = canvas.width;
     const altura = canvas.height;
 
-    // GRID DE SALAS — divide tela em áreas 2x2
-    const tamSalaX = largura / 2;
-    const tamSalaY = altura / 2;
-    const tiposSala = Object.keys(TIPOS_SALA);
+    // Definir zonas temáticas do hospital
+    const zonas = [
+      { x: 0, y: 0, w: largura/2, h: altura/2, tipo: "enfermaria" },
+      { x: largura/2, y: 0, w: largura/2, h: altura/2, tipo: "laboratorio" },
+      { x: 0, y: altura/2, w: largura/2, h: altura/2, tipo: "corredor" },
+      { x: largura/2, y: altura/2, w: largura/2, h: altura/2, tipo: "morgue" }
+    ];
 
-    for (let sx = 0; sx < 2; sx++) {
-      for (let sy = 0; sy < 2; sy++) {
-        const x = sx * tamSalaX;
-        const y = sy * tamSalaY;
-        const tipo = tiposSala[Math.floor(Math.random() * tiposSala.length)];
-        const sala = {
-          x, y, largura: tamSalaX, altura: tamSalaY, tipo,
-          id: `${sx}-${sy}`
-        };
-        salasCenario.push(sala);
-
-        // Gera elementos específicos da sala
-        gerarDetalhesSala(sala);
+    zonas.forEach(zona => {
+      if (zona.tipo === "enfermaria") {
+        gerarZonaEnfermaria(zona);
+      } else if (zona.tipo === "laboratorio") {
+        gerarZonaLaboratorio(zona);
+      } else if (zona.tipo === "corredor") {
+        gerarZonaCorredor(zona);
+      } else if (zona.tipo === "morgue") {
+        gerarZonaMorgue(zona);
       }
-    }
+    });
 
-    // RUÍDO/ATMOSFERA GERAL
-    // Manchas de mofo/sangue espalhadas
-    for (let i = 0; i < 40; i++) {
-      elementosCenario.push({
-        tipo: "mancha",
-        x: Math.random() * largura,
-        y: Math.random() * altura,
-        raio: 12 + Math.random() * 45,
-        cor: Math.random() > 0.65 
-          ? `rgba(74,30,30,${0.15 + Math.random() * 0.2})`
-          : `rgba(58,74,63,${0.1 + Math.random() * 0.25})`
-      });
-    }
+    // Decoração geral do hospital
+    gerarDetalhesCenario(largura, altura);
+  }
 
-    // Fissuras/rachaduras no piso
-    for (let i = 0; i < 18; i++) {
-      elementosCenario.push({
-        tipo: "racha",
-        x: Math.random() * largura,
-        y: Math.random() * altura,
-        comprimento: 25 + Math.random() * 85,
-        angulo: Math.random() * Math.PI * 2,
-        espessura: Math.random() > 0.7 ? 2.5 : 1.2
-      });
-    }
+  function gerarZonaEnfermaria(zona) {
+    const { x, y, w, h } = zona;
 
-    // Trilhas de sangue (caminhos)
+    // Paredes
     for (let i = 0; i < 3; i++) {
-      const startX = Math.random() * largura;
-      const startY = Math.random() * altura;
-      const endX = startX + (Math.random() - 0.5) * 300;
-      const endY = startY + (Math.random() - 0.5) * 300;
       elementosCenario.push({
-        tipo: "trilha_sangue",
-        x1: startX, y1: startY,
-        x2: endX, y2: endY,
-        espessura: 3 + Math.random() * 2
+        tipo: "parede",
+        x: x + 40 + i * 120,
+        y: y + 60,
+        largura: 25,
+        altura: h - 120,
+        cor: "rgba(100,110,100,0.6)"
       });
     }
 
-    // Focos de luz ambiente (sombras)
+    // Camas hospitais
+    for (let i = 0; i < 4; i++) {
+      const cama_x = x + 60 + i * 130;
+      const cama_y = y + 100 + (i % 2) * 100;
+      elementosCenario.push({
+        tipo: "cama",
+        x: cama_x,
+        y: cama_y,
+        largura: 70,
+        altura: 40,
+        angulo: 0
+      });
+    }
+
+    // Equipamentos médicos
+    for (let i = 0; i < 3; i++) {
+      elementosCenario.push({
+        tipo: "maquina",
+        x: x + 100 + i * 150,
+        y: y + h - 80,
+        raio: 15
+      });
+    }
+
+    // Manchas de sangue na parede
+    for (let i = 0; i < 5; i++) {
+      elementosCenario.push({
+        tipo: "mancha-parede",
+        x: x + 40 + Math.random() * (w - 80),
+        y: y + 50 + Math.random() * (h - 100),
+        raio: 20 + Math.random() * 40,
+        cor: "rgba(181,48,48,0.4)"
+      });
+    }
+  }
+
+  function gerarZonaLaboratorio(zona) {
+    const { x, y, w, h } = zona;
+
+    // Estantes com tubos de ensaio
+    for (let i = 0; i < 3; i++) {
+      elementosCenario.push({
+        tipo: "estante",
+        x: x + 50 + i * 100,
+        y: y + 80,
+        largura: 70,
+        altura: 120
+      });
+    }
+
+    // Mesas de trabalho
+    for (let i = 0; i < 2; i++) {
+      elementosCenario.push({
+        tipo: "mesa",
+        x: x + 100 + i * 150,
+        y: y + h - 100,
+        largura: 120,
+        altura: 60
+      });
+    }
+
+    // Tubulações no teto
     for (let i = 0; i < 4; i++) {
       elementosCenario.push({
-        tipo: "foco_luz",
+        tipo: "tubo",
+        x1: x + 10,
+        y1: y + 20 + i * 50,
+        x2: x + w - 10,
+        y2: y + 25 + i * 50,
+        grossura: 3
+      });
+    }
+
+    // Frascos químicos espalhados
+    for (let i = 0; i < 6; i++) {
+      elementosCenario.push({
+        tipo: "frasco",
+        x: x + 50 + Math.random() * (w - 100),
+        y: y + 100 + Math.random() * (h - 150),
+        raio: 8,
+        cor: ["#ff4444", "#ffaa00", "#44ff44"][Math.floor(Math.random() * 3)]
+      });
+    }
+  }
+
+  function gerarZonaCorredor(zona) {
+    const { x, y, w, h } = zona;
+
+    // Piso com fitas de marcação (quarentena)
+    for (let i = 0; i < 5; i++) {
+      elementosCenario.push({
+        tipo: "fita-quarentena",
+        x1: x + 20,
+        y1: y + 40 + i * 60,
+        x2: x + w - 20,
+        y2: y + 40 + i * 60,
+        grossura: 4
+      });
+    }
+
+    // Armários bloqueados
+    for (let i = 0; i < 4; i++) {
+      elementosCenario.push({
+        tipo: "armario",
+        x: x + 40 + i * 140,
+        y: y + 80,
+        largura: 60,
+        altura: 100
+      });
+    }
+
+    // Assentos/bancos destrozados
+    for (let i = 0; i < 3; i++) {
+      elementosCenario.push({
+        tipo: "banco",
+        x: x + 80 + i * 180,
+        y: y + h - 100,
+        largura: 100,
+        altura: 40
+      });
+    }
+
+    // Placas de avisos e sinalizações
+    for (let i = 0; i < 4; i++) {
+      elementosCenario.push({
+        tipo: "placa",
+        x: x + 60 + i * 140,
+        y: y + 30,
+        largura: 40,
+        altura: 50,
+        cor: "#ff4444"
+      });
+    }
+  }
+
+  function gerarZonaMorgue(zona) {
+    const { x, y, w, h } = zona;
+
+    // Gavetas de necrotério (refrigeradas)
+    for (let i = 0; i < 6; i++) {
+      const linha = Math.floor(i / 2);
+      const col = i % 2;
+      elementosCenario.push({
+        tipo: "gaveta",
+        x: x + 60 + col * 200,
+        y: y + 80 + linha * 90,
+        largura: 140,
+        altura: 50,
+        cor: "rgba(100,130,150,0.7)"
+      });
+    }
+
+    // Tubos de ar/refrigeração
+    for (let i = 0; i < 3; i++) {
+      elementosCenario.push({
+        tipo: "cano-vertical",
+        x: x + 50 + i * 120,
+        y: y + 40,
+        altura: h - 80,
+        raio: 8
+      });
+    }
+
+    // Vidros/paredes congeladas
+    for (let i = 0; i < 4; i++) {
+      elementosCenario.push({
+        tipo: "vidro-congelado",
+        x: x + 80 + i * 130,
+        y: y + h - 120,
+        largura: 80,
+        altura: 100,
+        frost: true
+      });
+    }
+
+    // Inscrições sombrias nas paredes
+    for (let i = 0; i < 3; i++) {
+      elementosCenario.push({
+        tipo: "inscrição",
+        x: x + 100 + i * 150,
+        y: y + 50,
+        comprimento: 80
+      });
+    }
+  }
+
+  function gerarDetalhesCenario(largura, altura) {
+    // Carcaça de ventilador no teto
+    for (let i = 0; i < 2; i++) {
+      elementosCenario.push({
+        tipo: "ventilador-parado",
+        x: 100 + i * (largura - 200),
+        y: 50,
+        raio: 40
+      });
+    }
+
+    // Pegadas de sangue e arrasto
+    for (let i = 0; i < 4; i++) {
+      elementosCenario.push({
+        tipo: "pegadas",
+        x: 50 + Math.random() * (largura - 100),
+        y: altura/2 + Math.random() * (altura/2 - 100),
+        comprimento: 80 + Math.random() * 120
+      });
+    }
+
+    // Vidros quebrados/espelhados
+    for (let i = 0; i < 6; i++) {
+      elementosCenario.push({
+        tipo: "vidro-quebrado",
         x: Math.random() * largura,
         y: Math.random() * altura,
-        raio: 80 + Math.random() * 120
+        largura: 50 + Math.random() * 80,
+        altura: 30 + Math.random() * 60,
+        angulo: Math.random() * Math.PI * 2
       });
     }
-  }
 
-  function gerarDetalhesSala(sala) {
-    const def = TIPOS_SALA[sala.tipo];
-    const cx = sala.x + sala.largura / 2;
-    const cy = sala.y + sala.altura / 2;
-    const detalhesSala = def.detalhes || [];
-
-    // Fundo colorido da sala
-    elementosCenario.push({
-      tipo: "fundo_sala",
-      x: sala.x,
-      y: sala.y,
-      largura: sala.largura,
-      altura: sala.altura,
-      cor: def.cor
-    });
-
-    // Borda/parede da sala
-    elementosCenario.push({
-      tipo: "parede_sala",
-      x: sala.x,
-      y: sala.y,
-      largura: sala.largura,
-      altura: sala.altura
-    });
-
-    // Cria detalhes baseado no tipo
-    detalhesSala.forEach(detalhe => {
-      gerarDetalhe(detalhe, sala);
-    });
-
-    // Assinatura visual única por sala
-    const seed = sala.id.charCodeAt(0) + sala.id.charCodeAt(2);
-    if (seed % 2 === 0) {
+    // Cacos de vidro espalhados
+    for (let i = 0; i < 15; i++) {
       elementosCenario.push({
-        tipo: "label_sala",
-        x: sala.x + 20,
-        y: sala.y + 20,
-        texto: def.nome,
-        tamanho: 11
+        tipo: "vidro-caco",
+        x: Math.random() * largura,
+        y: Math.random() * altura,
+        raio: 2 + Math.random() * 4,
+        brilho: Math.random()
       });
-    }
-  }
-
-  function gerarDetalhe(tipo, sala) {
-    const cx = sala.x + sala.largura / 2;
-    const cy = sala.y + sala.altura / 2;
-    const margin = 40;
-
-    switch (tipo) {
-      case "camas": {
-        for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
-          const x = sala.x + margin + Math.random() * (sala.largura - margin * 2);
-          const y = sala.y + margin + Math.random() * (sala.altura - margin * 2);
-          elementosCenario.push({
-            tipo: "cama_hospital",
-            x, y,
-            angulo: Math.random() * Math.PI * 2
-          });
-        }
-        break;
-      }
-      case "macas": {
-        for (let i = 0; i < 1 + Math.floor(Math.random() * 2); i++) {
-          elementosCenario.push({
-            tipo: "maca",
-            x: sala.x + margin + Math.random() * (sala.largura - margin * 2),
-            y: sala.y + margin + Math.random() * (sala.altura - margin * 2),
-            angulo: Math.random() * Math.PI * 0.5
-          });
-        }
-        break;
-      }
-      case "mesa_cirurgia": {
-        elementosCenario.push({
-          tipo: "mesa_cirurgia",
-          x: cx,
-          y: cy,
-          angulo: Math.random() * Math.PI * 2
-        });
-        break;
-      }
-      case "gavetões": {
-        for (let i = 0; i < 6; i++) {
-          elementosCenario.push({
-            tipo: "gaveta_morgue",
-            x: sala.x + 60 + (i % 3) * 80,
-            y: sala.y + 80 + Math.floor(i / 3) * 100
-          });
-        }
-        break;
-      }
-      case "caixas": {
-        for (let i = 0; i < 8; i++) {
-          elementosCenario.push({
-            tipo: "caixa",
-            x: sala.x + 50 + Math.random() * (sala.largura - 100),
-            y: sala.y + 50 + Math.random() * (sala.altura - 100),
-            largura: 30 + Math.random() * 40,
-            altura: 30 + Math.random() * 40,
-            angulo: Math.random() * 0.3
-          });
-        }
-        break;
-      }
-      case "rachões": {
-        for (let i = 0; i < 4; i++) {
-          elementosCenario.push({
-            tipo: "racha",
-            x: sala.x + Math.random() * sala.largura,
-            y: sala.y + Math.random() * sala.altura,
-            comprimento: 40 + Math.random() * 60,
-            angulo: Math.random() * Math.PI * 2,
-            espessura: 2
-          });
-        }
-        break;
-      }
-      case "poças": {
-        for (let i = 0; i < 2; i++) {
-          elementosCenario.push({
-            tipo: "poca",
-            x: sala.x + margin + Math.random() * (sala.largura - margin * 2),
-            y: sala.y + margin + Math.random() * (sala.altura - margin * 2),
-            raio: 20 + Math.random() * 35
-          });
-        }
-        break;
-      }
-      case "manchas": {
-        for (let i = 0; i < 5; i++) {
-          elementosCenario.push({
-            tipo: "mancha_sangue_grande",
-            x: sala.x + margin + Math.random() * (sala.largura - margin * 2),
-            y: sala.y + margin + Math.random() * (sala.altura - margin * 2),
-            raio: 25 + Math.random() * 40
-          });
-        }
-        break;
-      }
-      case "placa": {
-        elementosCenario.push({
-          tipo: "placa_porta",
-          x: sala.x + 30,
-          y: sala.y + 30,
-          texto: Math.random() > 0.5 ? "PERIGO" : "ISOLADO"
-        });
-        break;
-      }
-      case "ossos": {
-        for (let i = 0; i < 3; i++) {
-          elementosCenario.push({
-            tipo: "osso",
-            x: sala.x + margin + Math.random() * (sala.largura - margin * 2),
-            y: sala.y + margin + Math.random() * (sala.altura - margin * 2),
-            tamanho: Math.random() > 0.5 ? "pequeno" : "grande",
-            angulo: Math.random() * Math.PI * 2
-          });
-        }
-        break;
-      }
-      case "bagunça": {
-        for (let i = 0; i < 4; i++) {
-          elementosCenario.push({
-            tipo: "entulho",
-            x: sala.x + margin + Math.random() * (sala.largura - margin * 2),
-            y: sala.y + margin + Math.random() * (sala.altura - margin * 2),
-            largura: 20 + Math.random() * 35,
-            altura: 15 + Math.random() * 25,
-            angulo: Math.random() * Math.PI * 2
-          });
-        }
-        break;
-      }
     }
   }
 
@@ -1035,6 +1027,123 @@
         tipoParticula: "chama"
       });
     }
+  }
+
+  // ----------------------------------------------------------
+  // EXPLOSÃO DE GRANADA — partículas + dano em área + glow
+  // ----------------------------------------------------------
+  function criarExplosao(x, y, raioExplosao = 150, danoBase = 70) {
+    // Criar partículas explosivas (fogo + fumaça)
+    if (particulas.length <= 500) {
+      // Partículas quentes (amarelo/vermelho/laranja)
+      for (let i = 0; i < 30; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const vel = aleatorioEntre(3, 8);
+        const cores = ["#ffff00", "#ff7a1f", "#ff3300", "#ffaa00"];
+        
+        particulas.push({
+          x, y,
+          vx: Math.cos(ang) * vel,
+          vy: Math.sin(ang) * vel,
+          vida: aleatorioEntre(0.5, 1.2),
+          cor: cores[Math.floor(Math.random() * cores.length)],
+          raio: aleatorioEntre(3, 8),
+          tipoParticula: "explosao"
+        });
+      }
+
+      // Partículas de fumaça cinza (mais lentas)
+      for (let i = 0; i < 15; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const vel = aleatorioEntre(1, 4);
+        
+        particulas.push({
+          x, y,
+          vx: Math.cos(ang) * vel,
+          vy: Math.sin(ang) * vel,
+          vida: aleatorioEntre(0.6, 1.5),
+          cor: `rgba(120,120,120,${0.4 + Math.random() * 0.3})`,
+          raio: aleatorioEntre(4, 10),
+          tipoParticula: "fumaca"
+        });
+      }
+    }
+
+    // Adicionar flash visual (glow que desaparece)
+    explosoes.push({
+      x, y,
+      raio: raioExplosao * 0.3,
+      raioMax: raioExplosao,
+      intensidade: 1,
+      vida: 0.4
+    });
+
+    // Dano e knockback em todos os zumbis na área
+    for (let i = 0; i < zumbis.length; i++) {
+      const z = zumbis[i];
+      const dist = distancia(x, y, z.x, z.y);
+      
+      if (dist < raioExplosao) {
+        // Dano reduz com distância
+        const falloff = 1 - (dist / raioExplosao);
+        const dano = danoBase * falloff;
+        z.vida -= dano;
+        
+        // Knockback — empurra zumbi para longe do centro
+        const ang = Math.atan2(z.y - y, z.x - x);
+        const forcaKnockback = 8 * falloff;
+        z.x += Math.cos(ang) * forcaKnockback;
+        z.y += Math.sin(ang) * forcaKnockback;
+        
+        // Criar sangue no ponto de impacto
+        criarParticulasSangue(z.x, z.y, "#5c7263", 3);
+      }
+    }
+
+    // Criar marca de queimadura no cenário
+    if (Math.random() > 0.3) {
+      elementosCenario.push({
+        tipo: "mancha",
+        x, y,
+        raio: raioExplosao * 0.35,
+        cor: "rgba(74,30,30,0.2)"
+      });
+    }
+  }
+
+  function atualizarExplosoes() {
+    for (let i = explosoes.length - 1; i >= 0; i--) {
+      const exp = explosoes[i];
+      exp.vida -= 0.016; // ~60fps
+      
+      if (exp.vida <= 0) {
+        explosoes.splice(i, 1);
+      }
+    }
+  }
+
+  function desenharExplosoes() {
+    explosoes.forEach(exp => {
+      const progresso = 1 - exp.vida / 0.4; // 0 = início, 1 = fim
+      const raioAtual = exp.raio + (exp.raioMax - exp.raio) * progresso;
+      const intensidade = exp.intensidade * (1 - progresso); // fade out
+      
+      // Anel externo brilhante (amarelo quente)
+      ctx.strokeStyle = `rgba(255, 255, 0, ${intensidade * 0.5})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(exp.x, exp.y, raioAtual, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Glow preenchido (laranja)
+      const gradient = ctx.createRadialGradient(exp.x, exp.y, 0, exp.x, exp.y, raioAtual);
+      gradient.addColorStop(0, `rgba(255, 165, 0, ${intensidade * 0.6})`);
+      gradient.addColorStop(1, `rgba(255, 100, 0, ${intensidade * 0.2})`);
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(exp.x, exp.y, raioAtual, 0, Math.PI * 2);
+      ctx.fill();
+    });
   }
 
   function atualizarParticulas() {
@@ -1398,8 +1507,14 @@
       for (let j = zumbis.length - 1; j >= 0; j--) {
         const z = zumbis[j];
         if (distancia(p.x, p.y, z.x, z.y) < z.raio + (p.raio || 0)) {
-          z.vida -= p.dano;
-          criarParticulasSangue(p.x, p.y, "#5c7263", 4);
+          // GRANADA — explosão em área!
+          if (p.tipoArma === "lanca_granadas") {
+            criarExplosao(p.x, p.y, 150, 70);
+            ganharMoedas(25); // bonus por explodir
+          } else {
+            z.vida -= p.dano;
+            criarParticulasSangue(p.x, p.y, "#5c7263", 4);
+          }
           atingiu = true;
           break;
         }
@@ -1408,6 +1523,10 @@
       if (atingiu || p.vida <= 0 ||
           p.x < -20 || p.x > canvas.width + 20 ||
           p.y < -20 || p.y > canvas.height + 20) {
+        // Se foi granada e não atingiu nada (expirou), fazer explosão de qualquer jeito
+        if (p.tipoArma === "lanca_granadas" && !atingiu && p.vida <= 0) {
+          criarExplosao(p.x, p.y, 150, 70);
+        }
         projeteis.splice(i, 1);
       }
     }
@@ -1437,200 +1556,16 @@
   // DESENHO — CENÁRIO
   // ----------------------------------------------------------
   function desenharCenario() {
-    // Fundo base do hospital
-    ctx.fillStyle = "#1d1f1a";
+    // Fundo base com gradiente
+    const gradiente = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradiente.addColorStop(0, "#1a1c16");
+    gradiente.addColorStop(0.5, "#1d1f1a");
+    gradiente.addColorStop(1, "#161813");
+    ctx.fillStyle = gradiente;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Renderizar elementos em ordem de profundidade
-    elementosCenario.forEach(el => {
-      if (el.tipo === "fundo_sala") {
-        ctx.fillStyle = el.cor;
-        ctx.fillRect(el.x, el.y, el.largura, el.altura);
-      }
-    });
-
-    // Pisos/manchas
-    elementosCenario.forEach(el => {
-      if (el.tipo === "mancha") {
-        ctx.beginPath();
-        ctx.fillStyle = el.cor;
-        ctx.ellipse(el.x, el.y, el.raio, el.raio * 0.6, 0, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (el.tipo === "poca") {
-        ctx.beginPath();
-        ctx.fillStyle = "rgba(30,20,20,0.35)";
-        ctx.ellipse(el.x, el.y, el.raio, el.raio * 0.5, 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(50,30,30,0.3)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      } else if (el.tipo === "mancha_sangue_grande") {
-        ctx.fillStyle = "rgba(122,31,31,0.25)";
-        ctx.beginPath();
-        ctx.ellipse(el.x, el.y, el.raio, el.raio * 0.7, Math.random() * 0.3, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    });
-
-    // Móveis/estruturas
-    elementosCenario.forEach(el => {
-      if (el.tipo === "cama_hospital") {
-        ctx.save();
-        ctx.translate(el.x, el.y);
-        ctx.rotate(el.angulo);
-        // Frame da cama
-        ctx.strokeStyle = "#4a5a40";
-        ctx.lineWidth = 3;
-        ctx.strokeRect(-35, -20, 70, 40);
-        // Colchão
-        ctx.fillStyle = "rgba(100,80,60,0.6)";
-        ctx.fillRect(-32, -16, 64, 32);
-        // Barraca lateral
-        ctx.strokeStyle = "#3a4a30";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-32, -20);
-        ctx.lineTo(-32, -35);
-        ctx.stroke();
-        ctx.restore();
-      } else if (el.tipo === "maca") {
-        ctx.save();
-        ctx.translate(el.x, el.y);
-        ctx.rotate(el.angulo);
-        ctx.fillStyle = "rgba(140,120,100,0.7)";
-        ctx.fillRect(-40, -15, 80, 30);
-        ctx.strokeStyle = "#5a4a3a";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-40, -15, 80, 30);
-        ctx.restore();
-      } else if (el.tipo === "mesa_cirurgia") {
-        ctx.save();
-        ctx.translate(el.x, el.y);
-        ctx.rotate(el.angulo);
-        // Superfície
-        ctx.fillStyle = "rgba(140,150,160,0.6)";
-        ctx.fillRect(-50, -30, 100, 60);
-        ctx.strokeStyle = "#8fb8a8";
-        ctx.lineWidth = 3;
-        ctx.strokeRect(-50, -30, 100, 60);
-        // Manchas de sangue
-        ctx.fillStyle = "rgba(122,31,31,0.4)";
-        ctx.fillRect(-20, -10, 40, 20);
-        ctx.restore();
-      } else if (el.tipo === "caixa") {
-        ctx.save();
-        ctx.translate(el.x, el.y);
-        ctx.rotate(el.angulo);
-        ctx.fillStyle = "rgba(100,90,70,0.7)";
-        ctx.fillRect(-el.largura / 2, -el.altura / 2, el.largura, el.altura);
-        ctx.strokeStyle = "#4a443a";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-el.largura / 2, -el.altura / 2, el.largura, el.altura);
-        ctx.restore();
-      } else if (el.tipo === "gaveta_morgue") {
-        // Gavetão da morgue
-        ctx.fillStyle = "rgba(60,55,45,0.8)";
-        ctx.fillRect(el.x, el.y, 60, 35);
-        ctx.strokeStyle = "#3a3a30";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(el.x, el.y, 60, 35);
-        // Maçaneta
-        ctx.fillStyle = "#7a7a60";
-        ctx.beginPath();
-        ctx.arc(el.x + 50, el.y + 17, 3, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (el.tipo === "entulho") {
-        ctx.save();
-        ctx.translate(el.x, el.y);
-        ctx.rotate(el.angulo);
-        ctx.fillStyle = "rgba(50,45,35,0.8)";
-        ctx.fillRect(-el.largura / 2, -el.altura / 2, el.largura, el.altura);
-        ctx.restore();
-      }
-    });
-
-    // Detalhes (rachas, trilhas)
-    elementosCenario.forEach(el => {
-      if (el.tipo === "racha") {
-        ctx.strokeStyle = `rgba(0,0,0,${0.2 + Math.random() * 0.2})`;
-        ctx.lineWidth = el.espessura || 1.5;
-        ctx.beginPath();
-        ctx.moveTo(el.x, el.y);
-        ctx.lineTo(el.x + Math.cos(el.angulo) * el.comprimento, el.y + Math.sin(el.angulo) * el.comprimento);
-        ctx.stroke();
-      } else if (el.tipo === "trilha_sangue") {
-        ctx.strokeStyle = "rgba(122,31,31,0.15)";
-        ctx.lineWidth = el.espessura;
-        ctx.beginPath();
-        ctx.moveTo(el.x1, el.y1);
-        ctx.lineTo(el.x2, el.y2);
-        ctx.stroke();
-      } else if (el.tipo === "osso") {
-        ctx.save();
-        ctx.translate(el.x, el.y);
-        ctx.rotate(el.angulo);
-        ctx.fillStyle = "rgba(200,190,170,0.5)";
-        if (el.tamanho === "grande") {
-          ctx.fillRect(-25, -4, 50, 8);
-          ctx.beginPath();
-          ctx.arc(-25, 0, 6, 0, Math.PI * 2);
-          ctx.arc(25, 0, 6, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.fillRect(-12, -2, 24, 4);
-          ctx.beginPath();
-          ctx.arc(-12, 0, 3, 0, Math.PI * 2);
-          ctx.arc(12, 0, 3, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
-      } else if (el.tipo === "placa_porta") {
-        ctx.fillStyle = "rgba(255,90,61,0.3)";
-        ctx.fillRect(el.x, el.y, 50, 40);
-        ctx.strokeStyle = "#ff5a3d";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(el.x, el.y, 50, 40);
-        ctx.fillStyle = "#ff5a3d";
-        ctx.font = "bold 10px 'Share Tech Mono'";
-        ctx.textAlign = "center";
-        ctx.fillText(el.texto, el.x + 25, el.y + 25);
-      }
-    });
-
-    // Paredes e divisões
-    elementosCenario.forEach(el => {
-      if (el.tipo === "parede_sala") {
-        ctx.strokeStyle = "rgba(40,35,25,0.4)";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(el.x, el.y, el.largura, el.altura);
-      }
-    });
-
-    // Labels das salas
-    elementosCenario.forEach(el => {
-      if (el.tipo === "label_sala") {
-        ctx.fillStyle = "rgba(212,207,154,0.2)";
-        ctx.font = `${el.tamanho}px 'Share Tech Mono', monospace`;
-        ctx.textAlign = "left";
-        ctx.fillText(el.texto, el.x, el.y);
-      }
-    });
-
-    // Focos de luz (vinheta suave das salas)
-    elementosCenario.forEach(el => {
-      if (el.tipo === "foco_luz") {
-        const gradient = ctx.createRadialGradient(el.x, el.y, 0, el.x, el.y, el.raio);
-        gradient.addColorStop(0, "rgba(212,207,154,0.08)");
-        gradient.addColorStop(1, "rgba(212,207,154,0)");
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(el.x, el.y, el.raio, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    });
-
-    // Grade de azulejos sutil (fundo)
-    ctx.strokeStyle = "rgba(0,0,0,0.08)";
+    // Grade de azulejos sutil
+    ctx.strokeStyle = "rgba(0,0,0,0.25)";
     ctx.lineWidth = 1;
     const tamanho = 80;
     for (let x = 0; x < canvas.width; x += tamanho) {
@@ -1639,6 +1574,287 @@
     for (let y = 0; y < canvas.height; y += tamanho) {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
     }
+
+    // Desenhar elementos do cenário
+    elementosCenario.forEach(el => {
+      if (el.tipo === "parede") {
+        ctx.fillStyle = el.cor;
+        ctx.fillRect(el.x, el.y, el.largura, el.altura);
+        ctx.strokeStyle = "rgba(0,0,0,0.6)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(el.x, el.y, el.largura, el.altura);
+
+      } else if (el.tipo === "cama") {
+        ctx.save();
+        ctx.translate(el.x, el.y);
+        ctx.rotate(el.angulo);
+        
+        // Estrutura da cama
+        ctx.fillStyle = "#4a5a4a";
+        ctx.fillRect(-el.largura/2, -el.altura/2, el.largura, el.altura);
+        ctx.strokeStyle = "#3a4a3a";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-el.largura/2, -el.altura/2, el.largura, el.altura);
+        
+        // Travesseiro/colchão
+        ctx.fillStyle = "rgba(200,150,100,0.6)";
+        ctx.fillRect(-el.largura/2 + 5, -el.altura/2 + 5, el.largura - 10, el.altura - 10);
+        
+        ctx.restore();
+
+      } else if (el.tipo === "maquina") {
+        // Máquina de monitoramento
+        ctx.fillStyle = "rgba(60,80,90,0.8)";
+        ctx.beginPath();
+        ctx.arc(el.x, el.y, el.raio, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.strokeStyle = "#ffaa00";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // LED aceso
+        ctx.fillStyle = "#6fff8f";
+        ctx.beginPath();
+        ctx.arc(el.x, el.y, el.raio * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowColor = "#6fff8f";
+        ctx.shadowBlur = 8;
+
+      } else if (el.tipo === "mancha-parede") {
+        ctx.fillStyle = el.cor;
+        ctx.beginPath();
+        ctx.ellipse(el.x, el.y, el.raio, el.raio * 0.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+      } else if (el.tipo === "estante") {
+        ctx.fillStyle = "rgba(70,60,50,0.8)";
+        ctx.fillRect(el.x, el.y, el.largura, el.altura);
+        
+        // Prateleiras
+        ctx.strokeStyle = "rgba(100,90,80,0.6)";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 4; i++) {
+          const y = el.y + (i * el.altura / 4);
+          ctx.beginPath();
+          ctx.moveTo(el.x, y);
+          ctx.lineTo(el.x + el.largura, y);
+          ctx.stroke();
+        }
+
+      } else if (el.tipo === "mesa") {
+        ctx.fillStyle = "#5a6a5a";
+        ctx.fillRect(el.x, el.y, el.largura, el.altura);
+        ctx.strokeStyle = "#3a4a3a";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(el.x, el.y, el.largura, el.altura);
+
+      } else if (el.tipo === "tubo") {
+        ctx.strokeStyle = "rgba(80,90,100,0.7)";
+        ctx.lineWidth = el.grossura;
+        ctx.beginPath();
+        ctx.moveTo(el.x1, el.y1);
+        ctx.lineTo(el.x2, el.y2);
+        ctx.stroke();
+
+      } else if (el.tipo === "frasco") {
+        ctx.fillStyle = el.cor;
+        ctx.beginPath();
+        ctx.arc(el.x, el.y, el.raio, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowColor = el.cor;
+        ctx.shadowBlur = 6;
+        
+        // Rótulo
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.fillRect(el.x - el.raio/2, el.y + el.raio/3, el.raio, el.raio/2);
+        ctx.shadowBlur = 0;
+
+      } else if (el.tipo === "fita-quarentena") {
+        ctx.strokeStyle = "#ffaa00";
+        ctx.lineWidth = el.grossura;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.moveTo(el.x1, el.y1);
+        ctx.lineTo(el.x2, el.y2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+      } else if (el.tipo === "armario") {
+        ctx.fillStyle = "#4a5a4a";
+        ctx.fillRect(el.x, el.y, el.largura, el.altura);
+        ctx.strokeStyle = "#2a3a2a";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(el.x, el.y, el.largura, el.altura);
+        
+        // Trava/corrente
+        ctx.strokeStyle = "#ffaa00";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(el.x + el.largura/2 - 5, el.y);
+        ctx.lineTo(el.x + el.largura/2 - 5, el.y + 15);
+        ctx.stroke();
+
+      } else if (el.tipo === "banco") {
+        ctx.fillStyle = "rgba(80,70,60,0.7)";
+        ctx.fillRect(el.x, el.y, el.largura, el.altura);
+        ctx.strokeStyle = "rgba(50,40,30,0.8)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(el.x, el.y, el.largura, el.altura);
+
+      } else if (el.tipo === "placa") {
+        ctx.fillStyle = el.cor;
+        ctx.fillRect(el.x, el.y, el.largura, el.altura);
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(el.x, el.y, el.largura, el.altura);
+        
+        // Triângulo de aviso
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(el.x + el.largura/2, el.y + 5);
+        ctx.lineTo(el.x + 10, el.y + el.altura - 5);
+        ctx.lineTo(el.x + el.largura - 10, el.y + el.altura - 5);
+        ctx.closePath();
+        ctx.fill();
+
+      } else if (el.tipo === "gaveta") {
+        ctx.fillStyle = el.cor;
+        ctx.fillRect(el.x, el.y, el.largura, el.altura);
+        ctx.strokeStyle = "rgba(150,180,200,0.5)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(el.x, el.y, el.largura, el.altura);
+        
+        // Alça
+        ctx.strokeStyle = "rgba(100,150,180,0.6)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(el.x + 15, el.y + el.altura/2);
+        ctx.lineTo(el.x + el.largura - 15, el.y + el.altura/2);
+        ctx.stroke();
+
+      } else if (el.tipo === "cano-vertical") {
+        ctx.strokeStyle = "rgba(100,120,130,0.6)";
+        ctx.lineWidth = el.raio * 2;
+        ctx.beginPath();
+        ctx.moveTo(el.x, el.y);
+        ctx.lineTo(el.x, el.y + el.altura);
+        ctx.stroke();
+
+      } else if (el.tipo === "vidro-congelado") {
+        ctx.fillStyle = "rgba(150,180,200,0.2)";
+        ctx.fillRect(el.x, el.y, el.largura, el.altura);
+        ctx.strokeStyle = "rgba(150,180,200,0.5)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(el.x, el.y, el.largura, el.altura);
+
+      } else if (el.tipo === "inscrição") {
+        ctx.strokeStyle = "rgba(139,69,19,0.4)";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(el.x, el.y + i * 15);
+          ctx.lineTo(el.x + el.comprimento, el.y + i * 15 + Math.sin(i) * 5);
+          ctx.stroke();
+        }
+
+      } else if (el.tipo === "ventilador-parado") {
+        ctx.fillStyle = "rgba(60,60,60,0.6)";
+        ctx.beginPath();
+        ctx.arc(el.x, el.y, el.raio, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Pás
+        ctx.strokeStyle = "rgba(40,40,40,0.8)";
+        ctx.lineWidth = 4;
+        for (let i = 0; i < 3; i++) {
+          const angulo = (i * Math.PI * 2 / 3) + Math.PI / 4;
+          ctx.beginPath();
+          ctx.moveTo(el.x, el.y);
+          ctx.lineTo(el.x + Math.cos(angulo) * el.raio, el.y + Math.sin(angulo) * el.raio);
+          ctx.stroke();
+        }
+
+      } else if (el.tipo === "pegadas") {
+        ctx.fillStyle = "rgba(139,0,0,0.2)";
+        ctx.beginPath();
+        ctx.ellipse(el.x, el.y, el.comprimento / 2, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+      } else if (el.tipo === "vidro-quebrado") {
+        ctx.save();
+        ctx.translate(el.x, el.y);
+        ctx.rotate(el.angulo);
+        
+        ctx.fillStyle = "rgba(150,180,200,0.15)";
+        ctx.fillRect(-el.largura/2, -el.altura/2, el.largura, el.altura);
+        
+        ctx.strokeStyle = "rgba(150,180,200,0.4)";
+        ctx.lineWidth = 1.5;
+        // Linhas de vidro quebrado
+        for (let i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(-el.largura/2, -el.altura/2 + (el.altura / 3) * (i + 1));
+          ctx.lineTo(el.largura/2, -el.altura/2 + (el.altura / 3) * (i + 1) + Math.random() * 10);
+          ctx.stroke();
+        }
+        
+        ctx.restore();
+
+      } else if (el.tipo === "vidro-caco") {
+        ctx.fillStyle = `rgba(150,180,200,${el.brilho * 0.6})`;
+        ctx.beginPath();
+        ctx.arc(el.x, el.y, el.raio, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowColor = "rgba(150,180,200,0.8)";
+        ctx.shadowBlur = 4;
+      }
+    });
+
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = "transparent";
+
+    // Divisões entre zonas com efeito de profundidade
+    const largura = canvas.width;
+    const altura = canvas.height;
+    
+    // Linha divisória vertical (centro)
+    ctx.strokeStyle = "rgba(50,50,50,0.3)";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([10, 5]);
+    ctx.beginPath();
+    ctx.moveTo(largura / 2, 0);
+    ctx.lineTo(largura / 2, altura);
+    ctx.stroke();
+    
+    // Linha divisória horizontal (meio)
+    ctx.beginPath();
+    ctx.moveTo(0, altura / 2);
+    ctx.lineTo(largura, altura / 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Efeito de neblina/fumaça
+    const neblina = ctx.createLinearGradient(0, 0, 0, altura);
+    neblina.addColorStop(0, "rgba(50,50,50,0.05)");
+    neblina.addColorStop(0.5, "rgba(0,0,0,0)");
+    neblina.addColorStop(1, "rgba(50,50,50,0.08)");
+    ctx.fillStyle = neblina;
+    ctx.fillRect(0, 0, largura, altura);
+    
+    // Iluminação de emergência (zonas quentes/frias)
+    const luz1 = ctx.createRadialGradient(largura * 0.25, altura * 0.25, 0, largura * 0.25, altura * 0.25, 300);
+    luz1.addColorStop(0, "rgba(255, 100, 100, 0.08)");
+    luz1.addColorStop(1, "rgba(255, 100, 100, 0)");
+    ctx.fillStyle = luz1;
+    ctx.fillRect(0, 0, largura / 2, altura / 2);
+    
+    const luz2 = ctx.createRadialGradient(largura * 0.75, altura * 0.75, 0, largura * 0.75, altura * 0.75, 300);
+    luz2.addColorStop(0, "rgba(100, 150, 200, 0.06)");
+    luz2.addColorStop(1, "rgba(100, 150, 200, 0)");
+    ctx.fillStyle = luz2;
+    ctx.fillRect(largura / 2, altura / 2, largura / 2, altura / 2);
   }
 
   // ----------------------------------------------------------
@@ -2121,6 +2337,7 @@
     atualizarOndas(ts);
     atualizarZumbis(dt);
     atualizarProjeteis();
+    atualizarExplosoes();
     atualizarParticulas();
     atualizarPickups();
     atualizarOndasChoque();
@@ -2142,6 +2359,7 @@
     desenharZumbis();
     desenharJogador();
     desenharProjeteis();
+    desenharExplosoes();
     desenharOndasChoque();
     desenharRaiosLaser();
 
@@ -2165,6 +2383,7 @@
   function voltarAoMenu() {
     jogoAtivo = false;
     hud.classList.add("escondido");
+    painelNomeHud.classList.add("escondido");
     telaMorte.classList.add("escondido");
     telaInicio.classList.remove("escondido");
     mostrarPainelMenu("menu");
@@ -2188,6 +2407,7 @@
     projeteis = [];
     zumbis = [];
     particulas = [];
+    explosoes = [];
     pickups = [];
     ondasChoque = [];
     raiosLaser = [];
@@ -2216,10 +2436,16 @@
   }
 
   function iniciarJogo() {
+    // Mostrar painel de entrada de nome
+    mostrarPainelNome();
+  }
+
+  function iniciarJogoAposPegarNome() {
     resetarEstado();
     telaInicio.classList.add("escondido");
     telaMorte.classList.add("escondido");
     hud.classList.remove("escondido");
+    painelNomeHud.classList.remove("escondido");
     jogoAtivo = true;
     ultimoFrameTs = performance.now();
     requestAnimationFrame(loop);
@@ -2486,8 +2712,73 @@
   window.addEventListener("contextmenu", (e) => e.preventDefault());
 
   // ----------------------------------------------------------
-  // PAINEL DE COMPRAS — lógica de intervalo entre ondas
+  // SISTEMA DE NOME DO JOGADOR
   // ----------------------------------------------------------
+  const painelNome = document.getElementById("painel-nome");
+  const inputNomeJogador = document.getElementById("input-nome-jogador");
+  const btnConfirmarNome = document.getElementById("btn-confirmar-nome");
+  const contadorNome = document.getElementById("contador-nome");
+  const painelNomeHud = document.getElementById("painel-nome-hud");
+  const nomeJogadorHud = document.getElementById("nome-jogador-hud");
+
+  let nomeJogadorAtual = "ANÔNIMO";
+
+  function mostrarPainelNome() {
+    painelNome.classList.remove("escondido");
+    inputNomeJogador.focus();
+    inputNomeJogador.value = "";
+    contadorNome.textContent = "0";
+  }
+
+  function ocultarPainelNome() {
+    painelNome.classList.add("escondido");
+  }
+
+  function atualizarContadorNome() {
+    contadorNome.textContent = inputNomeJogador.value.length;
+  }
+
+  function confirmarNome() {
+    let nome = inputNomeJogador.value.trim();
+    
+    // Validação
+    if (nome.length === 0) {
+      nome = "ANÔNIMO";
+    }
+    
+    // Limpar e garantir formato
+    nome = nome.toUpperCase().substring(0, 20);
+    nomeJogadorAtual = nome;
+    
+    // Atualizar HUD
+    nomeJogadorHud.textContent = nomeJogadorAtual;
+    
+    // Fechar painel
+    ocultarPainelNome();
+    
+    // Continuar com inicialização do jogo
+    iniciarJogoAposPegarNome();
+  }
+
+  function mostrarNomeNoHUD() {
+    painelNomeHud.classList.remove("escondido");
+    nomeJogadorHud.textContent = nomeJogadorAtual;
+  }
+
+  function ocultarNomeNoHUD() {
+    painelNomeHud.classList.add("escondido");
+  }
+
+  // Event Listeners para o painel de nome
+  inputNomeJogador.addEventListener("input", atualizarContadorNome);
+  
+  inputNomeJogador.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      confirmarNome();
+    }
+  });
+
+  btnConfirmarNome.addEventListener("click", confirmarNome);
   const painelCompras = document.getElementById("painel-compras");
   const btnFecharCompras = document.getElementById("btn-fechar-compras");
   const btnPularOnda = document.getElementById("btn-pular-onda");
@@ -2547,12 +2838,18 @@
   atualizarHudOnda = function() {
     atualizarHudOndaOriginal();
     
-    // Se entrou em intervalo e está em jogo (não no menu), mostra painel
-    if (ondaInfo.emIntervalo && !telaInicio.classList.contains("escondido") === false && !telaMorte.classList.contains("escondido") === false) {
+    // Verificar se o jogo está ativo (não no menu ou na tela de morte)
+    const estaEmJogo = !telaInicio.classList.contains("escondido") === false && 
+                       !telaMorte.classList.contains("escondido") === false;
+    
+    // Se entrou em intervalo e está em jogo, mostra painel
+    if (ondaInfo.emIntervalo && estaEmJogo) {
       mostrarPainelCompras();
     } else if (!ondaInfo.emIntervalo) {
       // esconde painel e botão quando onda começa
-      fecharPainelCompras();
+      if (!painelCompras.classList.contains("escondido")) {
+        fecharPainelCompras();
+      }
       btnPularOnda.classList.add("escondido");
     }
   };

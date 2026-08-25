@@ -4,13 +4,13 @@
    ============================================================ */
 
 :root {
-  --concreto:        #2b2b28;
+  --concreto:         #2b2b28;
   --concreto-escuro:  #1a1a17;
   --verde-musgo:      #3a4a3f;
-  --verde-musgo-claro: #5c7263;
+  --verde-musgo-c:    #5c7263;
   --bege-fluor:       #d4cf9a;
-  --vermelho-emerg:   #7a1f1f;
-  --vermelho-vivo:    #b53030;
+  --vermelho-e:       #7a1f1f;
+  --vermelho-v:       #b53030;
   --quase-preto:      #0d0d0c;
   --soro-azul:        #8fb8a8;
 }
@@ -203,7 +203,7 @@ html, body {
   color: var(--bege-fluor);
   text-shadow: 
     0 0 10px rgba(212,207,154,0.8),
-    2px 2px 0 var(--vermelho-vivo);
+    2px 2px 0 var(--vermelho-v);
   letter-spacing: 2px;
   margin-bottom: 5px;
 }
@@ -270,7 +270,7 @@ html, body {
 
 .placeholder-compras {
   text-align: center;
-  color: var(--verde-musgo-claro);
+  color: var(--verde-musgo-c);
   font-size: 13px;
   padding: 40px 20px;
   opacity: 0.6;
@@ -284,13 +284,13 @@ html, body {
   font-size: 12px;
   color: var(--bege-fluor);
   padding-top: 12px;
-  border-top: 1px dashed var(--verde-musgo-claro);
+  border-top: 1px dashed var(--verde-musgo-c);
   letter-spacing: 1px;
 }
 
 .tempo-onda {
   font-weight: bold;
-  color: var(--vermelho-vivo);
+  color: var(--vermelho-v);
   font-size: 14px;
   text-shadow: 0 0 8px rgba(181,48,48,0.6);
 }
@@ -303,7 +303,7 @@ html, body {
   position: fixed;
   bottom: 40px;
   right: 40px;
-  z-index: 95;
+  z-index: 90;
   padding: 14px 28px;
   background: linear-gradient(135deg, var(--verde-musgo) 0%, rgba(92,114,99,0.8) 100%);
   border: 2px solid var(--bege-fluor);
@@ -317,19 +317,15 @@ html, body {
   letter-spacing: 1px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   box-shadow: 
     0 0 30px rgba(212,207,154,0.3),
     inset 0 0 30px rgba(212,207,154,0.05),
     0 0 60px rgba(92,114,99,0.4);
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  animation: flutuacao-botao 2s ease-in-out infinite;
   white-space: nowrap;
-}
-
-@keyframes flutuacao-botao {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  will-change: transform;
 }
 
 .btn-pular-onda::before {
@@ -340,6 +336,23 @@ html, body {
   background: conic-gradient(from 0deg, transparent 0%, rgba(212,207,154,0.3) 25%, transparent 50%);
   animation: girar-botao 3s linear infinite;
   z-index: -1;
+  pointer-events: none;
+}
+
+.btn-pular-onda::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50px;
+  background: none;
+  animation: flutuacao-botao 2s ease-in-out infinite;
+  z-index: -2;
+  pointer-events: none;
+}
+
+@keyframes flutuacao-botao {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
 @keyframes girar-botao {
@@ -379,6 +392,729 @@ html, body {
 
 .btn-pular-onda.escondido {
   display: none !important;
+  visibility: hidden;
+}
+
+/* ============================================================
+   RESPONSIVIDADE MOBILE
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .btn-pular-onda {
+    bottom: 30px;
+    right: 30px;
+    padding: 12px 24px;
+    font-size: 11px;
+    gap: 8px;
+  }
+
+  .icone-pular {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Painel de compras */
+  .painel-compras {
+    max-width: 90vw;
+    max-height: 75vh;
+    padding: 30px 20px 20px;
+  }
+
+  .titulo-compras {
+    font-size: 22px;
+  }
+
+  .subtitulo-compras {
+    font-size: 11px;
+  }
+
+  .compras-saldo {
+    font-size: 12px;
+    padding: 10px 12px;
+  }
+
+  .valor-saldo {
+    font-size: 16px;
+  }
+
+  /* Botão fechar */
+  .btn-fechar-compras {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Botão pular onda */
+  .btn-pular-onda {
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 18px;
+    font-size: 10px;
+    gap: 6px;
+    min-height: 40px;
+  }
+
+  .icone-pular {
+    font-size: 12px;
+  }
+
+  /* Painel de nome */
+  .nome-card {
+    padding: 25px 20px;
+  }
+
+  .nome-titulo {
+    font-size: 22px;
+    margin-bottom: 6px;
+  }
+
+  .nome-subtitulo {
+    font-size: 12px;
+  }
+
+  .campo-nome-input {
+    padding: 12px;
+    font-size: 15px;
+  }
+
+  .btn-confirmar-nome {
+    padding: 12px;
+    font-size: 12px;
+  }
+
+  /* HUD geral */
+  .painel-nome-hud {
+    top: 15px;
+    left: 15px;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+
+  .nome-hud-container {
+    gap: 6px;
+  }
+
+  .rotulo-nome {
+    font-size: 10px;
+  }
+
+  .nome-jogador-valor {
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  /* Painel soro (vida) */
+  .painel-soro {
+    max-width: 150px;
+  }
+
+  .rotulo-painel {
+    font-size: 10px;
+  }
+
+  .soro-valor {
+    font-size: 11px;
+  }
+
+  /* Painel monitor */
+  .painel-monitor {
+    max-width: 160px;
+  }
+
+  .exp-valor {
+    font-size: 10px;
+  }
+
+  /* HUD direita */
+  .coluna-hud-direita {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+  }
+
+  .painel-municao {
+    width: 130px;
+  }
+
+  .municao-valor {
+    font-size: 11px;
+  }
+
+  /* Botão menu HUD */
+  .botao-menu-hud {
+    padding: 8px 16px;
+    font-size: 10px;
+    margin-top: 10px;
+  }
+
+  /* Barra inventário */
+  .barra-inventario {
+    font-size: 10px;
+    padding: 8px;
+  }
+
+  .slot-atual-numero {
+    font-size: 10px;
+  }
+
+  .slot-atual-nome {
+    font-size: 11px;
+  }
+
+  /* Dica inventário */
+  .dica-inventario {
+    font-size: 9px;
+  }
+
+  /* Painel abates */
+  .painel-abates {
+    font-size: 11px;
+  }
+
+  /* Painel onda */
+  .painel-onda {
+    max-width: 150px;
+  }
+
+  .onda-restantes {
+    font-size: 10px;
+  }
+
+  .onda-status {
+    font-size: 10px;
+  }
+
+  /* Painel poder */
+  .painel-poder {
+    max-width: 150px;
+  }
+
+  .poder-status {
+    font-size: 10px;
+  }
+
+  /* Vinheta */
+  .vinheta {
+    opacity: 0.15;
+  }
+
+  /* Ruído CRT */
+  .ruido-crt {
+    opacity: 0.05;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+
+  /* HUD compacto */
+  #hud {
+    padding: 10px;
+  }
+
+  /* Painel compras ultra responsivo */
+  .painel-compras {
+    max-width: 95vw;
+    max-height: 85vh;
+    padding: 20px 15px 15px;
+  }
+
+  .titulo-compras {
+    font-size: 18px;
+  }
+
+  .btn-fechar-compras {
+    width: 32px;
+    height: 32px;
+    top: 8px;
+    left: 8px;
+  }
+
+  /* Botão pular muito menor */
+  .btn-pular-onda {
+    bottom: 15px;
+    right: 15px;
+    padding: 8px 14px;
+    font-size: 9px;
+    gap: 4px;
+    min-height: 36px;
+    min-width: 110px;
+  }
+
+  .icone-pular {
+    font-size: 11px;
+  }
+
+  /* Painel nome responsivo */
+  .nome-card {
+    padding: 20px 15px;
+  }
+
+  .nome-titulo {
+    font-size: 18px;
+    letter-spacing: 1px;
+  }
+
+  .nome-subtitulo {
+    font-size: 11px;
+  }
+
+  .campo-nome-input {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .nome-instrucao {
+    font-size: 10px;
+  }
+
+  .btn-confirmar-nome {
+    padding: 10px;
+    font-size: 11px;
+    gap: 8px;
+  }
+
+  .nome-rodape {
+    font-size: 9px;
+  }
+
+  /* HUD Nomes topo */
+  .painel-nome-hud {
+    top: 10px;
+    left: 10px;
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+
+  .nome-jogador-valor {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Menu orientação vertical */
+  .menu-opcoes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .botao-sangue,
+  .botao-osso {
+    padding: 12px;
+    font-size: 11px;
+  }
+
+  .icone-osso {
+    font-size: 14px;
+  }
+
+  .valor-atual-menu {
+    font-size: 9px;
+  }
+
+  /* Contador seleção armas */
+  .contador-selecao {
+    font-size: 10px;
+  }
+
+  /* Grade de skins compacta */
+  .grade-skins {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cartao-skin {
+    padding: 10px;
+  }
+
+  .nome-skin {
+    font-size: 10px;
+  }
+
+  .desc-skin {
+    font-size: 8px;
+  }
+
+  /* Grade de armas compacta */
+  .grade-armas {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cartao-arma {
+    padding: 10px;
+  }
+
+  .nome-arma {
+    font-size: 10px;
+  }
+
+  .stats-arma {
+    font-size: 8px;
+  }
+
+  .preco-arma {
+    font-size: 9px;
+  }
+
+  /* Grade poderes compacta */
+  .grade-poderes {
+    grid-template-columns: 1fr;
+  }
+
+  .cartao-poder {
+    padding: 12px;
+  }
+
+  .nome-poder {
+    font-size: 11px;
+  }
+
+  .desc-poder {
+    font-size: 9px;
+  }
+
+  /* Aviso onda */
+  #aviso-onda {
+    font-size: 28px;
+  }
+
+  /* Aviso nível */
+  #aviso-nivel {
+    font-size: 24px;
+  }
+
+  /* Aviso recarga */
+  .aviso-recarga {
+    font-size: 10px;
+  }
+
+  /* Painel ECG menor */
+  .ecg-svg {
+    max-width: 150px;
+  }
+
+  /* Desabilitar animações pesadas em mobile */
+  @media (prefers-reduced-motion: reduce) {
+    .btn-pular-onda,
+    .painel-compras,
+    .nome-card,
+    .painel-nome-hud {
+      animation: none !important;
+    }
+
+    .icone-pular,
+    .btn-fechar-compras::before {
+      animation: none !important;
+    }
+  }
+}
+
+/* ============================================================
+   PAINEL: ENTRADA DE NOME DO JOGADOR
+   ============================================================ */
+
+.painel-nome {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+
+.painel-nome:not(.escondido) {
+  opacity: 1;
+  visibility: visible;
+}
+
+.nome-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(4px);
+  animation: pulse-overlay 2s ease-in-out infinite;
+}
+
+@keyframes pulse-overlay {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.95; }
+}
+
+.nome-card {
+  position: relative;
+  z-index: 2;
+  width: 90%;
+  max-width: 500px;
+  background: linear-gradient(135deg, rgba(58,74,63,0.98) 0%, rgba(42,43,40,0.98) 100%);
+  border: 3px solid var(--bege-fluor);
+  border-radius: 8px;
+  padding: 40px 35px;
+  box-shadow: 
+    0 0 60px rgba(212,207,154,0.4),
+    inset 0 0 80px rgba(212,207,154,0.1),
+    0 0 120px rgba(181,48,48,0.3);
+  animation: entrada-nome 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes entrada-nome {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) rotateY(20deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotateY(0);
+  }
+}
+
+.nome-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px);
+  pointer-events: none;
+}
+
+.nome-header {
+  margin-bottom: 30px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  border-bottom: 2px solid var(--bege-fluor);
+  padding-bottom: 15px;
+}
+
+.nome-titulo {
+  font-family: 'Creepster', cursive;
+  font-size: 28px;
+  color: var(--bege-fluor);
+  text-shadow: 
+    0 0 15px rgba(212,207,154,0.8),
+    2px 2px 0 var(--vermelho-v);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.nome-subtitulo {
+  font-size: 13px;
+  color: var(--soro-azul);
+  font-style: italic;
+  letter-spacing: 1px;
+}
+
+.nome-form {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 25px;
+}
+
+.campo-input-container {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.campo-nome-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(20, 22, 18, 0.8);
+  border: 2px solid var(--bege-fluor);
+  border-radius: 4px;
+  color: var(--bege-fluor);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 16px;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 0 20px rgba(212,207,154,0.2),
+    inset 0 0 20px rgba(212,207,154,0.05);
+  caret-color: var(--bege-fluor);
+}
+
+.campo-nome-input::placeholder {
+  color: rgba(212,207,154,0.5);
+}
+
+.campo-nome-input:focus {
+  outline: none;
+  border-color: #ffff00;
+  box-shadow: 
+    0 0 40px rgba(212,207,154,0.4),
+    inset 0 0 30px rgba(212,207,154,0.1),
+    0 0 60px rgba(255,255,0,0.3);
+  background: rgba(20, 22, 18, 0.95);
+}
+
+.input-borda {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--bege-fluor), transparent);
+  animation: slide-borda 2s ease-in-out infinite;
+}
+
+@keyframes slide-borda {
+  0% { width: 0; left: 0; }
+  50% { width: 100%; left: 0; }
+  100% { width: 0; left: 100%; }
+}
+
+.contador-caracteres {
+  text-align: right;
+  font-size: 11px;
+  color: var(--verde-musgo-c);
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+}
+
+.nome-instrucao {
+  text-align: center;
+  font-size: 12px;
+  color: var(--soro-azul);
+  font-style: italic;
+  margin-bottom: 20px;
+}
+
+.btn-confirmar-nome {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--vermelho-v) 0%, rgba(181,48,48,0.8) 100%);
+  border: 2px solid var(--bege-fluor);
+  border-radius: 4px;
+  color: var(--bege-fluor);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 0 30px rgba(181,48,48,0.4),
+    inset 0 0 20px rgba(212,207,154,0.05);
+  position: relative;
+  z-index: 1;
+  animation: pulse-botao-nome 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-botao-nome {
+  0%, 100% {
+    box-shadow: 
+      0 0 30px rgba(181,48,48,0.4),
+      inset 0 0 20px rgba(212,207,154,0.05);
+  }
+  50% {
+    box-shadow: 
+      0 0 50px rgba(181,48,48,0.6),
+      inset 0 0 30px rgba(212,207,154,0.1);
+  }
+}
+
+.icone-botao {
+  font-size: 14px;
+  animation: bounce-seta 0.8s ease-in-out infinite;
+}
+
+@keyframes bounce-seta {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+
+.btn-confirmar-nome:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #c43030 0%, rgba(196,48,48,0.9) 100%);
+  box-shadow: 
+    0 0 50px rgba(181,48,48,0.6),
+    inset 0 0 30px rgba(212,207,154,0.1),
+    0 8px 20px rgba(0,0,0,0.4);
+}
+
+.btn-confirmar-nome:active {
+  transform: translateY(0);
+}
+
+.nome-rodape {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  font-size: 11px;
+  color: var(--verde-musgo-c);
+  font-style: italic;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px dashed var(--verde-musgo-c);
+  letter-spacing: 0.5px;
+}
+
+.painel-nome.escondido {
+  display: none;
+}
+
+/* ============================================================
+   HUD: NOME DO JOGADOR
+   ============================================================ */
+
+.painel-nome-hud {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 50;
+  padding: 12px 18px;
+  background: rgba(58,74,63,0.6);
+  border: 2px solid var(--bege-fluor);
+  border-radius: 4px;
+  box-shadow: 
+    0 0 20px rgba(212,207,154,0.2),
+    inset 0 0 15px rgba(212,207,154,0.05);
+  font-size: 12px;
+  letter-spacing: 1px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+
+.painel-nome-hud:not(.escondido) {
+  opacity: 1;
+  visibility: visible;
+  animation: slide-in-nome 0.5s ease;
+}
+
+@keyframes slide-in-nome {
+  from {
+    transform: translateX(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.nome-hud-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rotulo-nome {
+  color: var(--soro-azul);
+  font-weight: bold;
+}
+
+.nome-jogador-valor {
+  color: var(--bege-fluor);
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(212,207,154,0.6);
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 #canvas-jogo {
@@ -1159,7 +1895,7 @@ html, body {
   top: 18px;
   left: 18px;
   background: rgba(26,26,23,0.78);
-  border: 1px solid var(--verde-musgo-claro);
+  border: 1px solid var(--verde-musgo-c);
   padding: 10px 14px;
   width: 200px;
 }
@@ -1194,7 +1930,7 @@ html, body {
   top: 18px;
   left: 240px;
   background: rgba(26,26,23,0.78);
-  border: 1px solid var(--verde-musgo-claro);
+  border: 1px solid var(--verde-musgo-c);
   padding: 10px 14px;
   width: 230px;
 }
@@ -1249,7 +1985,7 @@ html, body {
 /* --- Painel de Munição (seringa) --- */
 .painel-municao {
   background: rgba(26,26,23,0.78);
-  border: 1px solid var(--vermelho-emerg);
+  border: 1px solid var(--vermelho-e);
   padding: 10px 14px;
   width: 210px;
   text-align: right;
@@ -1264,7 +2000,7 @@ html, body {
   text-transform: uppercase;
   text-align: center;
   background: rgba(26,26,23,0.78);
-  border: 1px solid var(--verde-musgo-claro);
+  border: 1px solid var(--verde-musgo-c);
   color: var(--bege-fluor);
   padding: 7px 14px;
   cursor: pointer;
@@ -1327,7 +2063,7 @@ html, body {
   margin-top: 6px;
   font-family: 'VT323', monospace;
   font-size: 14px;
-  color: var(--vermelho-vivo);
+  color: var(--vermelho-v);
   animation: pulsar-texto 0.5s infinite;
 }
 
@@ -1357,7 +2093,7 @@ html, body {
 .slot-anterior,
 .slot-proximo {
   background: rgba(26,26,23,0.6);
-  border: 1px solid var(--verde-musgo-claro);
+  border: 1px solid var(--verde-musgo-c);
   padding: 6px 12px;
   font-size: 11px;
   letter-spacing: 1px;
@@ -1416,7 +2152,7 @@ html, body {
   bottom: 18px;
   left: 18px;
   background: rgba(26,26,23,0.78);
-  border: 1px solid var(--verde-musgo-claro);
+  border: 1px solid var(--verde-musgo-c);
   padding: 8px 14px;
   font-size: 13px;
   letter-spacing: 1px;
@@ -1429,7 +2165,7 @@ html, body {
   left: 50%;
   transform: translateX(-50%);
   background: rgba(26,26,23,0.78);
-  border: 1px solid var(--vermelho-emerg);
+  border: 1px solid var(--vermelho-e);
   padding: 8px 16px;
   text-align: center;
   min-width: 160px;
@@ -1457,7 +2193,7 @@ html, body {
   font-family: 'VT323', monospace;
   font-size: 42px;
   letter-spacing: 4px;
-  color: var(--vermelho-vivo);
+  color: var(--vermelho-v);
   text-shadow: 0 0 16px rgba(181,48,48,0.9), 2px 2px 0 #000;
   animation: aviso-nivel-anim 2.2s ease forwards;
 }
@@ -1474,7 +2210,7 @@ html, body {
   bottom: 18px;
   right: 18px;
   background: rgba(26,26,23,0.78);
-  border: 1px solid var(--vermelho-emerg);
+  border: 1px solid var(--vermelho-e);
   padding: 8px 14px;
   width: 170px;
   text-align: right;
@@ -1506,7 +2242,7 @@ html, body {
 }
 
 .poder-status.em-espera {
-  color: var(--vermelho-vivo);
+  color: var(--vermelho-v);
   animation: pulsar-texto 0.5s infinite;
 }
 
@@ -1549,4 +2285,84 @@ html, body {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
   25%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
   100% { opacity: 0; transform: translate(-50%, -80%) scale(1.3); }
+}
+
+/* ============================================================
+   OTIMIZAÇÕES MOBILE FINAIS
+   ============================================================ */
+
+body.is-mobile {
+  /* Desabilitar comportamentos de scroll padrão */
+  touch-action: none;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+}
+
+body.is-mobile canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Remover delay de 300ms em cliques mobile */
+body.is-mobile button {
+  touch-action: manipulation;
+}
+
+/* Otimizar inputs para mobile */
+body.is-mobile input {
+  font-size: 16px; /* Prevenir zoom automático */
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 4px;
+}
+
+/* Corrigir problemas de zoom na entrada de nome */
+#input-nome-jogador {
+  font-size: 16px;
+}
+
+/* Notch/Safe Area support */
+@supports (padding: max(0px)) {
+  .painel-nome-hud {
+    top: max(10px, env(safe-area-inset-top));
+    left: max(10px, env(safe-area-inset-left));
+  }
+
+  .btn-pular-onda {
+    bottom: max(15px, env(safe-area-inset-bottom));
+    right: max(15px, env(safe-area-inset-right));
+  }
+}
+
+/* Landscape mode adjustments */
+body.is-mobile.is-landscape {
+  font-size: 12px;
+}
+
+body.is-mobile.is-landscape .hud {
+  flex-wrap: wrap;
+}
+
+/* Desabilitar animações se o dispositivo preferir menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Melhorar contraste para dark mode */
+@media (prefers-color-scheme: dark) {
+  .painel-compras,
+  .nome-card,
+  .painel-nome-hud,
+  .btn-pular-onda {
+    background: linear-gradient(135deg, rgba(30,25,15,0.99) 0%, rgba(15,15,10,0.99) 100%);
+  }
 }
